@@ -1,10 +1,7 @@
-from queue import Queue
-from threading import Thread
-from time import sleep, time
+from time import time
 import torch
 from diffusers import DiffusionPipeline
 from diffusers.utils import export_to_obj
-from uuid import uuid4
 from ..state import (
     task_queue,
     waiting_tasks,
