@@ -1,16 +1,17 @@
+from datetime import timedelta
 from time import time
+
 import torch
 from diffusers import DiffusionPipeline
 from diffusers.utils import export_to_obj
-from ..state import (
-    task_queue,
-    waiting_tasks,
-    completed_tasks,
-    failed_tasks,
-    durations,
-    inference_thread_busy,
-    inference_thread_ready,
+
+from ..app.models import TaskStatusEnum
+from ..database.db_manager import (
+    finish_task,
+    get_earliest_waiting_task,
+    update_task_status,
 )
+from ..state import inference_thread_busy, inference_thread_ready
 
 
 # Logic goes here
@@ -38,18 +39,15 @@ def inference_thread():
     inference_thread_ready.set()
     # Main worker loop
     while True:
-        task = task_queue.get()
+        task = get_earliest_waiting_task()
+        update_task_status(task.task_id, TaskStatusEnum.processing)
         inference_thread_busy.set()
         start_time = time()
         try:
             generateWithPipe(task.prompt, task.guidance_scale, task.task_id)
-            completed_tasks.add(task.task_id)
-            durations.append(time() - start_time)
-            print(durations)
+            finish_task(task.task_id, timedelta(seconds=time() - start_time))
+
         except Exception as e:
             print(f"Error during inference for task {task.task_id}: {str(e)}")
-            failed_tasks.add(task.task_id)
-
-        waiting_tasks.remove(task.task_id)
-        task_queue.task_done()
+            update_task_status(task.task_id, TaskStatusEnum.failed)
         inference_thread_busy.clear()

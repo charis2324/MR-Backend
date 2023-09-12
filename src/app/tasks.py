@@ -1,52 +1,57 @@
-from fastapi import APIRouter, HTTPException, Body
-from fastapi.responses import FileResponse
 from uuid import uuid4
-from ..state import (
-    task_queue,
-    waiting_tasks,
-    completed_tasks,
-    failed_tasks,
-    durations,
-    inference_thread_busy,
+
+from fastapi import APIRouter, Body, HTTPException
+from fastapi.responses import FileResponse
+
+from ..database.db_manager import (
+    add_task,
+    get_actual_durations,
+    get_task_status,
+    get_waiting_tasks_count,
 )
-from .models import GenerationTask, GenerationTaskRequest, TaskStatus, TaskStatusEnum
+from ..state import inference_thread_busy
+from .models import (
+    GenerationTask,
+    GenerationTaskRequest,
+    GenerationTaskResponse,
+    TaskStatus,
+    TaskStatusEnum,
+)
 from .utils import get_duration_estimation
 
 router = APIRouter()
 
 
 @router.post("/generate", response_model=GenerationTask)
-def onReceivedGenerationRequest(request_body: GenerationTaskRequest = Body(...)):
+def receive_generation_equest(request_body: GenerationTaskRequest = Body(...)):
     prompt = request_body.prompt
     guidance_scale = request_body.guidance_scale
-    task = GenerationTask(
-        task_id=str(uuid4()),
-        prompt=prompt,
-        guidance_scale=guidance_scale,
-        estimated_duration=get_duration_estimation(
-            durations, task_queue.qsize(), inference_thread_busy
-        ),
+    task_id = str(uuid4())
+    estimated_duration = get_duration_estimation(
+        get_actual_durations(5), get_waiting_tasks_count(), inference_thread_busy
     )
-    task_queue.put(task)
-    waiting_tasks.add(task.task_id)
-    return task
+    add_task(task_id, prompt, guidance_scale, estimated_duration)
+    return GenerationTaskResponse(
+        task_id=task_id, estimated_duration=estimated_duration
+    )
 
 
 @router.get("/task/{task_id}/status", response_model=TaskStatus)
-def get_task_status(task_id: str):
-    if task_id in completed_tasks:
+def read_task_status(task_id: str):
+    status = get_task_status(task_id)
+    if status == TaskStatusEnum.completed:
         return TaskStatus(
             task_id=task_id,
             status=TaskStatusEnum.completed,
             message="Your task has been completed. You may now retrieve the results.",
         )
-    if task_id in waiting_tasks:
-        return TaskStatusEnum(
+    if status == TaskStatusEnum.waiting or status == TaskStatusEnum.processing:
+        return TaskStatus(
             task_id=task_id,
             status=TaskStatusEnum.processing,
             message="Your task is still being processed.",
         )
-    if task_id in failed_tasks:
+    if status == TaskStatusEnum.failed:
         return TaskStatus(
             task_id=task_id,
             status=TaskStatusEnum.failed,
@@ -60,7 +65,8 @@ def get_task_status(task_id: str):
 
 @router.get("/tasks/{task_id}/results")
 def get_task_results(task_id: str):
-    if task_id in completed_tasks:
+    status = get_task_status(task_id)
+    if status == TaskStatusEnum.completed:
         fname = f"{task_id}.obj"
         return FileResponse(fname)
     else:

@@ -1,5 +1,9 @@
 def get_duration_estimation(
-    durations, task_queue_length, is_busy, period=5, default_duration=10
+    durations: list,
+    task_queue_length: int,
+    is_busy: bool,
+    period=5,
+    default_duration=10,
 ):
     if not durations:  # if durations list is empty
         duration = default_duration
