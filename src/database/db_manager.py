@@ -23,9 +23,9 @@ class GenerationTask(Base):
     actual_duration = Column(Float)
     status = Column(Enum(TaskStatusEnum), index=True)
     created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), index=True
+        DateTime(timezone=False), server_default=func.now(), index=True
     )  # To know when each task was created
-    completed_at = Column(DateTime, index=True)
+    completed_at = Column(DateTime(timezone=False), index=True)
 
 
 # Initialize the database
@@ -61,7 +61,7 @@ def finish_task(task_id: str, actual_duration: timedelta):
     if task:
         # Update the actual duration and completed_at
         task.actual_duration = actual_duration.total_seconds()
-        task.completed_at = datetime.utcnow()  # Set completed_at to the current time
+        task.completed_at = datetime.now()  # Set completed_at to the current time
         task.status = TaskStatusEnum.completed
         db.commit()
 

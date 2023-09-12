@@ -14,7 +14,6 @@ from ..database.db_manager import (
 from ..state import inference_thread_busy, inference_thread_ready
 
 
-# Logic goes here
 def inference_thread():
     def generateWithPipe(prompt: str, guidance_scale: float, task_id: str):
         images = pipe(
