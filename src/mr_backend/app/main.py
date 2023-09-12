@@ -8,9 +8,6 @@ from . import tasks
 
 inference_thread = Thread(target=inference_thread, daemon=True)
 inference_thread.start()
-print("waiting")
-print(inference_thread_ready)
 inference_thread_ready.wait()
-print("done waiting")
 app = FastAPI()
 app.include_router(tasks.router)

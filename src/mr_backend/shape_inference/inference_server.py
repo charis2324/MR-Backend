@@ -27,7 +27,7 @@ def inference_thread():
         # Save to file
         export_to_obj(images[0], fname)
 
-    print("Running inference thread.")
+    print("Running inference thread...")
     # Load the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
