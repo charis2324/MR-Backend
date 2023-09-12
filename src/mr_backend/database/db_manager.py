@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func
 
-from ..app.models import TaskStatusEnum
+from mr_backend.app.models import TaskStatusEnum
 
 # Define the SQLAlchemy's Base model to maintain catalog of classes and tables
 Base = declarative_base()
@@ -23,13 +23,13 @@ class GenerationTask(Base):
     actual_duration = Column(Float)
     status = Column(Enum(TaskStatusEnum), index=True)
     created_at = Column(
-        DateTime(timezone=False), server_default=func.now(), index=True
+        DateTime(timezone=False), default=datetime.now, index=True
     )  # To know when each task was created
     completed_at = Column(DateTime(timezone=False), index=True)
 
 
 # Initialize the database
-engine = create_engine("sqlite:///main_storage.db")
+engine = create_engine("sqlite:///main_storage.db", echo=True)
 Base.metadata.create_all(engine)
 
 SessionLocal = sessionmaker(bind=engine)

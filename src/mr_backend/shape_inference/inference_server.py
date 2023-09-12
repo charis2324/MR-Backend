@@ -1,17 +1,17 @@
 from datetime import timedelta
-from time import time
+from time import time, sleep
 
 import torch
 from diffusers import DiffusionPipeline
 from diffusers.utils import export_to_obj
 
-from ..app.models import TaskStatusEnum
-from ..database.db_manager import (
+from mr_backend.app.models import TaskStatusEnum
+from mr_backend.database.db_manager import (
     finish_task,
     get_earliest_waiting_task,
     update_task_status,
 )
-from ..state import inference_thread_busy, inference_thread_ready
+from mr_backend.state import inference_thread_busy, inference_thread_ready
 
 
 def inference_thread():
@@ -27,6 +27,7 @@ def inference_thread():
         # Save to file
         export_to_obj(images[0], fname)
 
+    print("Running inference thread.")
     # Load the model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -39,6 +40,9 @@ def inference_thread():
     # Main worker loop
     while True:
         task = get_earliest_waiting_task()
+        if not task:
+            sleep(1)
+            continue
         update_task_status(task.task_id, TaskStatusEnum.processing)
         inference_thread_busy.set()
         start_time = time()

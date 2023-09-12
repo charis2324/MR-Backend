@@ -1,14 +1,16 @@
+from datetime import timedelta
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import FileResponse
 
-from ..database.db_manager import (
+from mr_backend.database.db_manager import (
     add_task,
     get_actual_durations,
     get_task_status,
     get_waiting_tasks_count,
 )
+
 from ..state import inference_thread_busy
 from .models import (
     GenerationTask,
@@ -22,15 +24,18 @@ from .utils import get_duration_estimation
 router = APIRouter()
 
 
-@router.post("/generate", response_model=GenerationTask)
+@router.post("/generate", response_model=GenerationTaskResponse)
 def receive_generation_equest(request_body: GenerationTaskRequest = Body(...)):
     prompt = request_body.prompt
     guidance_scale = request_body.guidance_scale
     task_id = str(uuid4())
-    estimated_duration = get_duration_estimation(
-        get_actual_durations(5), get_waiting_tasks_count(), inference_thread_busy
+    estimated_duration = timedelta(
+        seconds=get_duration_estimation(
+            get_actual_durations(5), get_waiting_tasks_count(), inference_thread_busy
+        )
     )
     add_task(task_id, prompt, guidance_scale, estimated_duration)
+    print(estimated_duration)
     return GenerationTaskResponse(
         task_id=task_id, estimated_duration=estimated_duration
     )
