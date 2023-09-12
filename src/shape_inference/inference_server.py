@@ -17,7 +17,7 @@ from ..state import (
 
 
 # Logic goes here
-def inferenceThread():
+def inference_thread():
     def generateWithPipe(prompt: str, guidance_scale: float, task_id: str):
         images = pipe(
             prompt,
@@ -55,4 +55,4 @@ def inferenceThread():
 
         waiting_tasks.remove(task.task_id)
         task_queue.task_done()
-        inference_thread_busy.Clear()
+        inference_thread_busy.clear()
