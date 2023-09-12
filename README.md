@@ -35,7 +35,8 @@ The project consists of the following key components:
 To start the server:
 
 1. Install dependencies
-2. Run `uvicorn main:app` 
+2. Run `cd src`
+2. Run `uvicorn mr_backend.app.main:app` 
 
 The main FastAPI app will launch. 
 The inference server will automatically start up in a background thread.
