@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
+from gzip import compress, decompress
 
-from sqlalchemy import Column, DateTime, Enum, Float, String, LargeBinary, create_engine
+from sqlalchemy import Column, DateTime, Enum, Float, LargeBinary, String, create_engine
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -35,7 +36,7 @@ class ModelObj(Base):
 
 
 # Initialize the database
-engine = create_engine("sqlite:///main_storage.db", echo=False)
+engine = create_engine("sqlite:///main_storage.db?check_same_thread=False", echo=False)
 Base.metadata.create_all(engine)
 
 SessionLocal = sessionmaker(bind=engine)
@@ -165,7 +166,8 @@ def get_earliest_waiting_task():
 
 def store_obj_file(uuid: str, obj_str: str):
     db = SessionLocal()
-    model = ModelObj(uuid=uuid, obj_file=obj_str.encode("utf-8"))
+    compress_obj_str = compress(obj_str.encode("utf-8"))
+    model = ModelObj(uuid=uuid, obj_file=compress_obj_str)
     db.add(model)
     db.commit()
     db.close()
@@ -174,4 +176,4 @@ def store_obj_file(uuid: str, obj_str: str):
 def get_obj_file(uuid: str):
     db = SessionLocal()
     obj_file = db.query(ModelObj.obj_file).filter(ModelObj.uuid == uuid).one()[0]
-    return obj_file.decode("utf-8")
+    return decompress(obj_file).decode()
