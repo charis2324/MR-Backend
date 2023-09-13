@@ -2,13 +2,14 @@ from datetime import timedelta
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from mr_backend.database.db_manager import (
     add_task,
     get_actual_durations,
     get_task_status,
     get_waiting_tasks_count,
+    get_obj_file,
 )
 
 from ..state import inference_thread_busy
@@ -72,8 +73,8 @@ def read_task_status(task_id: str):
 def get_task_results(task_id: str):
     status = get_task_status(task_id)
     if status == TaskStatusEnum.completed:
-        fname = f"{task_id}.obj"
-        return FileResponse(fname)
+        obj_file_str = get_obj_file(task_id)
+        return Response(content=obj_file_str, media_type="text/plain")
     else:
         raise HTTPException(
             status_code=400,

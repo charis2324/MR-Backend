@@ -1,6 +1,6 @@
 from datetime import timedelta
 from time import time, sleep
-
+import numpy as np
 import torch
 from diffusers import DiffusionPipeline
 from diffusers.utils import export_to_obj
@@ -10,8 +10,30 @@ from mr_backend.database.db_manager import (
     finish_task,
     get_earliest_waiting_task,
     update_task_status,
+    store_obj_file,
 )
 from mr_backend.state import inference_thread_busy, inference_thread_ready
+
+
+def export_to_obj_str(mesh):
+    verts = mesh.verts.detach().cpu().numpy()
+    faces = mesh.faces.cpu().numpy()
+
+    vertex_colors = np.stack(
+        [mesh.vertex_channels[x].detach().cpu().numpy() for x in "RGB"], axis=1
+    )
+    vertices = [
+        "{} {} {} {} {} {}".format(*coord, *color)
+        for coord, color in zip(verts.tolist(), vertex_colors.tolist())
+    ]
+
+    faces = [
+        "f {} {} {}".format(str(tri[0] + 1), str(tri[1] + 1), str(tri[2] + 1))
+        for tri in faces.tolist()
+    ]
+
+    combined_data = ["v " + vertex for vertex in vertices] + faces
+    return "\n".join(combined_data)
 
 
 def inference_thread():
@@ -25,7 +47,7 @@ def inference_thread():
         ).images
         fname = f"{task_id}.obj"
         # Save to file
-        export_to_obj(images[0], fname)
+        return export_to_obj_str(images[0])
 
     print("Running inference thread...")
     # Load the model
@@ -47,7 +69,8 @@ def inference_thread():
         inference_thread_busy.set()
         start_time = time()
         try:
-            generateWithPipe(task.prompt, task.guidance_scale, task.task_id)
+            obj_str = generateWithPipe(task.prompt, task.guidance_scale, task.task_id)
+            store_obj_file(uuid=task.task_id, obj_str=obj_str)
             finish_task(task.task_id, timedelta(seconds=time() - start_time))
 
         except Exception as e:
