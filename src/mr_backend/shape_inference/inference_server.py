@@ -1,16 +1,16 @@
 from datetime import timedelta
-from time import time, sleep
+from time import sleep, time
+
 import numpy as np
 import torch
 from diffusers import DiffusionPipeline
-from diffusers.utils import export_to_obj
 
 from mr_backend.app.models import TaskStatusEnum
 from mr_backend.database.db_manager import (
     finish_task,
     get_earliest_waiting_task,
-    update_task_status,
     store_obj_file,
+    update_task_status,
 )
 from mr_backend.state import inference_thread_busy, inference_thread_ready
 
@@ -37,7 +37,7 @@ def export_to_obj_str(mesh):
 
 
 def inference_thread():
-    def generateWithPipe(prompt: str, guidance_scale: float, task_id: str):
+    def generateWithPipe(prompt: str, guidance_scale: float):
         images = pipe(
             prompt,
             guidance_scale=guidance_scale,
@@ -45,8 +45,7 @@ def inference_thread():
             frame_size=256,
             output_type="mesh",
         ).images
-        fname = f"{task_id}.obj"
-        # Save to file
+        # Save to str
         return export_to_obj_str(images[0])
 
     print("Running inference thread...")
@@ -69,7 +68,7 @@ def inference_thread():
         inference_thread_busy.set()
         start_time = time()
         try:
-            obj_str = generateWithPipe(task.prompt, task.guidance_scale, task.task_id)
+            obj_str = generateWithPipe(task.prompt, task.guidance_scale)
             store_obj_file(uuid=task.task_id, obj_str=obj_str)
             finish_task(task.task_id, timedelta(seconds=time() - start_time))
 

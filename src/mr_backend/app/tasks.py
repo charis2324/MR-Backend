@@ -2,19 +2,18 @@ from datetime import timedelta
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import Response
 
 from mr_backend.database.db_manager import (
     add_task,
     get_actual_durations,
+    get_obj_file,
     get_task_status,
     get_waiting_tasks_count,
-    get_obj_file,
 )
 
 from ..state import inference_thread_busy
 from .models import (
-    GenerationTask,
     GenerationTaskRequest,
     GenerationTaskResponse,
     TaskStatus,
