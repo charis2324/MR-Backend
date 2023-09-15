@@ -35,6 +35,22 @@ class ModelObj(Base):
     obj_file = Column(LargeBinary)
 
 
+class ModelPreviewStatusEnum(str, Enum):
+    waiting = "waiting"
+    processing = "processing"
+    completed = "completed"
+    failed = "failed"
+
+
+class ModelPreview(Base):
+    __tablename__ = "model_previews"
+    uuid = Column(String, primary_key=True)
+    preview_file = Column(LargeBinary)
+    preview_file_type = Column(String)
+    status = Column(Enum(ModelPreviewStatusEnum))
+    created_at = Column(DateTime(timezone=False), default=datetime.now, index=True)
+
+
 # Initialize the database
 engine = create_engine("sqlite:///main_storage.db?check_same_thread=False", echo=False)
 Base.metadata.create_all(engine)
@@ -176,4 +192,53 @@ def store_obj_file(uuid: str, obj_str: str):
 def get_obj_file(uuid: str):
     db = SessionLocal()
     obj_file = db.query(ModelObj.obj_file).filter(ModelObj.uuid == uuid).one()[0]
+    db.close()
     return decompress(obj_file).decode()
+
+
+def create_model_preview(uuid: str):
+    db = SessionLocal()
+    new_model_preview = ModelPreview(uuid=uuid, status=ModelPreviewStatusEnum.waiting)
+    db.add(new_model_preview)
+    db.commit()
+    db.close()
+
+
+def get_earliest_waiting_preview_uuid():
+    db = SessionLocal()
+    earliest_waiting_preview = (
+        db.query(ModelPreview)
+        .filter(ModelPreview.status == ModelPreviewStatusEnum.waiting)
+        .order_by(ModelPreview.created_at.asc())
+        .first()
+    )
+    db.close()
+    if earliest_waiting_preview is not None:
+        return earliest_waiting_preview.uuid
+    else:
+        return None
+
+
+def update_model_preview_status(uuid: str, new_status: ModelPreviewStatusEnum):
+    db = SessionLocal()
+    model_preview = db.query(ModelPreview).filter(ModelPreview.uuid == uuid).first()
+    if model_preview is not None:
+        model_preview.status = new_status
+        db.commit()
+    else:
+        print(f"No ModelPreview found with uuid: {uuid}")
+
+    db.close()
+
+
+def finish_model_preview(uuid: str, file_type: str, preview_file_bytes: bytes):
+    db = SessionLocal()
+    model_preview = db.query(ModelPreview).filter(ModelPreview.uuid == uuid).first()
+    if model_preview is not None:
+        model_preview.preview_file = preview_file_bytes
+        model_preview.preview_file_type = file_type
+        model_preview.status = ModelPreviewStatusEnum.completed
+        db.commit()
+    else:
+        print(f"No ModelPreview found with uuid: {uuid}")
+    db.close()

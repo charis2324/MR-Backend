@@ -7,6 +7,7 @@ from diffusers import DiffusionPipeline
 
 from mr_backend.app.models import TaskStatusEnum
 from mr_backend.database.db_manager import (
+    create_model_preview,
     finish_task,
     get_earliest_waiting_task,
     store_obj_file,
@@ -71,7 +72,7 @@ def inference_thread():
             obj_str = generateWithPipe(task.prompt, task.guidance_scale)
             store_obj_file(uuid=task.task_id, obj_str=obj_str)
             finish_task(task.task_id, timedelta(seconds=time() - start_time))
-
+            create_model_preview(task.task_id)
         except Exception as e:
             print(f"Error during inference for task {task.task_id}: {str(e)}")
             update_task_status(task.task_id, TaskStatusEnum.failed)

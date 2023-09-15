@@ -1,4 +1,5 @@
 import io
+from gzip import compress
 
 import imageio
 import numpy as np
@@ -7,6 +8,14 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 from pygame.locals import *
+
+from mr_backend.database.db_manager import (
+    ModelPreviewStatusEnum,
+    finish_model_preview,
+    get_earliest_waiting_preview_uuid,
+    get_obj_file,
+    update_model_preview_status,
+)
 
 
 def draw(mesh):
@@ -101,3 +110,17 @@ def render_3d_object(file_or_bytes_or_str):
     if isinstance(output, io.BytesIO):
         output.seek(0)
     return output
+
+
+def preview_generation_thread():
+    while True:
+        uuid = get_earliest_waiting_preview_uuid()
+        if uuid is not None:
+            update_model_preview_status(uuid, ModelPreviewStatusEnum.processing)
+            try:
+                obj_str = get_obj_file(uuid)
+                gif_bytes = render_3d_object(obj_str).getvalue()
+                gif_bytes_compressed = compress(gif_bytes)
+                finish_model_preview(uuid, "gif", gif_bytes_compressed)
+            except Exception as e:
+                update_model_preview_status(uuid, ModelPreviewStatusEnum.failed)
