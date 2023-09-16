@@ -10,6 +10,8 @@ from mr_backend.database.db_manager import (
     get_obj_file,
     get_task_status,
     get_waiting_tasks_count,
+    get_preview_status,
+    get_preview,
 )
 
 from ..state import inference_thread_busy
@@ -20,6 +22,7 @@ from .models import (
     TaskStatusEnum,
 )
 from .utils import get_duration_estimation
+from gzip import decompress
 
 router = APIRouter()
 
@@ -74,6 +77,20 @@ def get_task_results(task_id: str):
     if status == TaskStatusEnum.completed:
         obj_file_str = get_obj_file(task_id)
         return Response(content=obj_file_str, media_type="text/plain")
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Results not ready. Please check the task's status before retrieving the results.",
+        )
+
+
+@router.get("/tasks/{task_id}/preview")
+def get_task_results(task_id: str):
+    status = get_preview_status(task_id)
+    if status == TaskStatusEnum.completed:
+        compress_preview, file_type = get_preview(task_id)
+        decompress_preview = decompress(compress_preview)
+        return Response(content=decompress_preview, media_type=f"image/{file_type}")
     else:
         raise HTTPException(
             status_code=400,

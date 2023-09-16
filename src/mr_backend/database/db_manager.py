@@ -6,7 +6,6 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func
-import enum
 from mr_backend.app.models import TaskStatusEnum
 
 # Define the SQLAlchemy's Base model to maintain catalog of classes and tables
@@ -235,3 +234,24 @@ def finish_model_preview(uuid: str, file_type: str, preview_file_bytes: bytes):
     else:
         print(f"No ModelPreview found with uuid: {uuid}")
     db.close()
+
+
+def get_preview_status(uuid: str):
+    db = SessionLocal()
+    # Get the task
+    preview = db.query(ModelPreview).filter(ModelPreview.uuid == uuid).first()
+    if preview:
+        status = preview.status
+    else:
+        status = None
+
+    db.close()
+
+    return status
+
+
+def get_preview(uuid: str):
+    db = SessionLocal()
+    preview_row = db.query(ModelPreview).filter(ModelPreview.uuid == uuid).one()
+    db.close()
+    return preview_row.preview_file, preview_row.preview_file_type
