@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MR Backend</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="#generate">Generate</a></li>
+                <li><a href="#status">Status</a></li>
+                <li><a href="#results">Results</a></li>
+                <li><a href="#preview">Preview</a></li>
+            </ul>
+        </nav>
+    </header>
+    <section id="generate">
+        <h2>Generate</h2>
+        <form method="POST" action="/generate">
+            <label for="prompt">Prompt:</label>
+            <input type="text" id="prompt" name="prompt">
+            <label for="guidance">Guidance Scale:</label>
+            <input type="number" id="guidance" name="guidance_scale">
+            <button type="submit">Submit</button>
+        </form>
+        <div id="response"></div>
+    </section>
+    <section id="status">
+        <h2>Task Status</h2>
+        <form id="statusForm">
+            <label for="status_task_id">Task ID:</label>
+            <input type="text" id="status_task_id" name="status_task_id">
+            <button type="submit">Check Status</button>
+        </form>
+        <div id="status_result"></div>
+    </section>
+    <section id="results">
+        <h2>Task Results</h2>
+        <form id="resultsForm">
+            <label for="results_task_id">Task ID:</label>
+            <input type="text" id="results_task_id" name="results_task_id">
+            <button type="submit">Get Results</button>
+        </form>
+    </section>
+    <section id="preview">
+        <h2>Task Preview</h2>
+        <form id="previewForm">
+            <label for="preview_task_id">Task ID:</label>
+            <input type="text" id="preview_task_id" name="preview_task_id">
+            <button type="submit">Get Preview</button>
+        </form>
+        <div id="previewResults"></div>
+    </section>
+    <script>
+        function formatDuration(duration) {
+            var match = duration.match(/PT(\d+H)?(\d+M)?(\d+(\.\d+)?S)?/);
+            var hours = (parseInt(match[1]) || 0);
+            var minutes = (parseInt(match[2]) || 0);
+            var seconds = (parseFloat(match[3]) || 0);
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toFixed(2).padStart(5, '0')}`;
+        }
+
+        document.getElementById('generate').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var prompt = document.getElementById('prompt').value;
+            var guidance = document.getElementById('guidance').value;
+
+            fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    guidance_scale: guidance
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                var formattedDuration = formatDuration(data.estimated_duration);
+                var responseDiv = document.createElement('div');
+                responseDiv.innerHTML = `
+                  <p><strong>Prompt:</strong> ${prompt}</p>
+                  <p>Task ID: <span class="task_id">${data.task_id}</span></p>
+                  <p>Estimated Duration: ${formattedDuration}</p>
+                  <button class="copyButton">Copy Task ID</button>
+                `;
+
+                document.getElementById('response').appendChild(responseDiv);
+
+                responseDiv.querySelector('.copyButton').addEventListener('click', function() {
+                    var copyText = responseDiv.querySelector(".task_id");
+                    var textArea = document.createElement("textarea");
+                    textArea.value = copyText.textContent;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand("Copy");
+                    textArea.remove();
+                    alert('Task ID copied to clipboard');
+                });
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+        document.getElementById('statusForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var task_id = document.getElementById('status_task_id').value;
+
+            fetch(`/task/${task_id}/status`)
+            .then(response => response.json())
+            .then(data => {
+                var resultDiv = document.getElementById('status_result');
+                var responseDiv = document.createElement('div');
+                responseDiv.innerHTML = `
+                  <hr>
+                  <p>Task ID: ${data.task_id}</p>
+                  <p>Status: ${data.status}</p>
+                  <p>Message: ${data.message}</p>
+                `;
+                resultDiv.appendChild(responseDiv);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+        document.getElementById('resultsForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var task_id = document.getElementById('results_task_id').value;
+
+            fetch(`/tasks/${task_id}/results`)
+            .then(response => response.text())
+            .then(data => {
+
+                // Create a Blob from the data
+                var file = new Blob([data], {type: 'text/plain'});
+                var url = URL.createObjectURL(file);
+
+                // Create a link and trigger a click to download the file
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = `${task_id}_results.obj`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Error:', error);
+            });
+        });
+        document.getElementById('previewForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var task_id = document.getElementById('preview_task_id').value;
+
+            fetch(`/tasks/${task_id}/preview`)
+            .then(response => response.blob())
+            .then(blob => {
+                // Create a URL from the Blob
+                var url = URL.createObjectURL(blob);
+
+                // Create an image element and set its src to the Blob URL
+                var img = document.createElement('img');
+                img.src = url;
+                img.style.maxWidth = '100%'; // To ensure the image fits in the container
+
+                // Append the image to the previewResults div
+                var previewResultsDiv = document.getElementById('previewResults');
+                previewResultsDiv.appendChild(img);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
