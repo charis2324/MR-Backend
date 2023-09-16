@@ -21,10 +21,9 @@ app = FastAPI()
 app.include_router(tasks.router)
 
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
-print(templates_dir)
 templates = Jinja2Templates(directory=templates_dir)
 
-static_dir = os.path.join(templates_dir, "static")
+static_dir = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
