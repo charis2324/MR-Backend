@@ -44,7 +44,7 @@ def receive_generation_equest(request_body: GenerationTaskRequest = Body(...)):
     )
 
 
-@router.get("/task/{task_id}/status", response_model=TaskStatus)
+@router.get("/tasks/{task_id}/status", response_model=TaskStatus)
 def read_task_status(task_id: str):
     status = get_task_status(task_id)
     if status == TaskStatusEnum.completed:

@@ -30,3 +30,8 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 @app.get("/", response_class=HTMLResponse)
 async def read_items(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/api_test", response_class=HTMLResponse)
+async def read_items(request: Request):
+    return templates.TemplateResponse("api_test.html", {"request": request})

@@ -48,6 +48,7 @@ def render_loop(mesh):
     for _ in range(num_frames):
         # Rotate the model
         glRotatef(rotation_per_frame, 0, 0, 1)
+        glClearColor(1.0, 1.0, 1.0, 0.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         # Draw the model
         glCallList(mesh_list)
