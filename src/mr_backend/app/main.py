@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.gzip import GZipMiddleware
 
 from mr_backend.model_preview.render_preview import preview_generation_thread
 from mr_backend.shape_inference.inference_server import inference_thread
@@ -18,6 +19,7 @@ preview_generation_thread.start()
 inference_thread_ready.wait()
 
 app = FastAPI()
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.include_router(tasks.router)
 
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")

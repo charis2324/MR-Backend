@@ -110,6 +110,7 @@
                                     setTimeout(() => fetchPreview(task_id), timeout = 5000);
                                     var previewResultsDiv = document.getElementById('previewResults');
                                     previewResultsDiv.prepend(createDownloadButton(task_id));
+                                    previewResultsDiv.prepend(createSpinner())
                                 }
                             })
 
@@ -133,6 +134,8 @@
                 });
         };
         function fetchPreview(task_id, retries = 10, retryInterval = 1000) {
+            const previewResultsDiv = document.getElementById('previewResults');
+
             fetch(`/tasks/${task_id}/preview`)
                 .then(response => {
                     if (!response.ok) {
@@ -145,8 +148,8 @@
                     var img = document.createElement('img');
                     img.src = url;
                     img.style.maxWidth = '100%'; // To ensure the image fits in the container
-                    var previewResultsDiv = document.getElementById('previewResults');
                     previewResultsDiv.prepend(img);
+                    removeSpinners();
                 })
                 .catch((error) => {
                     if (retries > 0) {
@@ -178,6 +181,20 @@
                     });
             };
             return downloadButton;
+        }
+        function createSpinner() {
+            const spinner = document.createElement('div');
+            spinner.className = 'spinner';
+            return spinner;
+        }
+        function removeSpinners() {
+            // Get all elements with class "spinner"
+            let spinners = document.querySelectorAll('div.spinner');
+
+            // Loop through all found elements and remove them
+            spinners.forEach(function (spinner) {
+                spinner.parentNode.removeChild(spinner);
+            });
         }
     </script>
 </body>
