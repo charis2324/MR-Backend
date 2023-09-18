@@ -14,8 +14,10 @@
         <form id="generateForm">
             <label for="prompt">Prompt:</label>
             <input type="text" id="prompt" name="prompt">
-            <label for="guidance">Guidance Scale:</label>
-            <input type="number" id="guidance" name="guidance_scale">
+            <label for="guidance">Guidance Scale: (defaults to 4.0) — A higher guidance scale value encourages the model
+                to generate images closely linked to the text prompt at the expense of lower image quality. Guidance
+                scale is enabled when guidance_scale > 1.</label>
+            <input type="number" id="guidance" name="guidance_scale" min="0" max="50" value="4">
             <button type="submit">Submit</button>
         </form>
         <div id="response"></div>
@@ -36,13 +38,32 @@
             var seconds = (parseFloat(match[3]) || 0);
             return hours * 3600 + minutes * 60 + seconds;
         }
-
+        function getRandomElement(array) {
+            let randomIndex = Math.floor(Math.random() * array.length);
+            return array[randomIndex];
+        }
+        let nouns = [
+            "an apple", "a backpack", "a car", "a dog", "an elephant", "a fan", "a guitar", "a house",
+            "an ice", "a jackal", "a kettle", "a lion", "a mango", "a notebook", "an owl", "a pencil",
+            "a quilt", "a rabbit", "a sofa", "a table", "an umbrella", "a vase", "a wallet", "a xylophone",
+            "a yak", "a zebra", "an airplane", "a bat", "a camera", "a dolphin", "an egg", "a fork",
+            "a goat", "a hat", "an ice cream", "a jellyfish", "a kangaroo", "a lemon", "a mirror",
+            "a napkin", "an orange", "a panda", "a quail", "a rose", "a snake", "a tiger", "a unicorn",
+            "a violin", "a watch", "an x-ray fish", "a yacht", "a zucchini", "an ant", "a boat", "a candle",
+            "a donkey", "an eel", "a flamingo", "some grapes", "a hedgehog", "an ink", "a jaguar", "a kiwi",
+            "a lamp", "a monkey", "a nut", "an octopus", "a penguin", "a quokka", "a raccoon", "a spoon",
+            "a toaster", "an utensil", "a vulture", "a watermelon", "a xerus", "a yoyo", "a zinnia",
+            "an armadillo", "a bell", "a cucumber", "a deer", "an eagle", "a fig", "a giraffe", "a hamster",
+            "an iguana", "a jelly", "a koala", "a lizard", "a mushroom", "a nest", "an ostrich", "a peacock",
+            "a quince", "a rhinoceros", "a starfish", "a turkey", "a ukelele", "a vacuum"
+        ];
         var task_id;
         var progressBarDiv = document.getElementById('progress-div');
         var progressBar = document.getElementById('progress-bar');
         var progressText = document.getElementById('progress-text');
         var pollingInterval;
-
+        const promptInput = document.getElementById('prompt');
+        promptInput.value = getRandomElement(nouns);
         document.getElementById('generateForm').addEventListener('submit', function (event) {
             event.preventDefault();
 
@@ -111,24 +132,6 @@
                     return "error";
                 });
         };
-
-
-        // function fetchPreview() {
-        //     fetch(`/tasks/${task_id}/preview`)
-        //         .then(response => response.blob())
-        //         .then(blob => {
-        //             var url = URL.createObjectURL(blob);
-        //             // Create an image element and set its src to the Blob URL
-        //             var img = document.createElement('img');
-        //             img.src = url;
-        //             img.style.maxWidth = '100%'; // To ensure the image fits in the container
-        //             var previewResultsDiv = document.getElementById('previewResults');
-        //             previewResultsDiv.prepend(img);
-        //         })
-        //         .catch((error) => {
-        //             console.error('Error:', error);
-        //         });
-        // }
         function fetchPreview(task_id, retries = 10, retryInterval = 1000) {
             fetch(`/tasks/${task_id}/preview`)
                 .then(response => {
