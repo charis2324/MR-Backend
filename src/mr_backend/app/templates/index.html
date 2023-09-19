@@ -23,7 +23,7 @@
                 to generate images closely linked to the text prompt at the expense of lower image quality. Guidance
                 scale is enabled when guidance_scale > 1.</label>
             <input type="number" id="guidance" name="guidance_scale" min="0" max="50" value="4">
-            <button type="submit">Submit</button>
+            <button type="submit" id="submit-button">Submit</button>
         </form>
         <div id="response"></div>
         <div id="progress-div">
@@ -66,12 +66,13 @@
         var progressBarDiv = document.getElementById('progress-div');
         var progressBar = document.getElementById('progress-bar');
         var progressText = document.getElementById('progress-text');
+        var submitButton = document.getElementById('submit-button');
         var pollingInterval;
         const promptInput = document.getElementById('prompt');
         promptInput.value = getRandomElement(nouns);
         document.getElementById('generateForm').addEventListener('submit', function (event) {
             event.preventDefault();
-
+            submitButton.disabled = true;
             var prompt = document.getElementById('prompt').value;
             var guidance = document.getElementById('guidance').value;
 
@@ -115,7 +116,7 @@
                                     setTimeout(() => fetchPreview(task_id), timeout = 5000);
                                     var previewResultsDiv = document.getElementById('previewResults');
                                     previewResultsDiv.prepend(createDownloadButton(task_id));
-                                    previewResultsDiv.prepend(createSpinner())
+                                    previewResultsDiv.prepend(createSpinner());
                                 }
                             })
 
@@ -155,6 +156,7 @@
                     img.style.maxWidth = '100%'; // To ensure the image fits in the container
                     previewResultsDiv.prepend(img);
                     removeSpinners();
+                    submitButton.disabled = false;
                 })
                 .catch((error) => {
                     if (retries > 0) {
