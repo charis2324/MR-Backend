@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MR Backend</title>
     <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
+    <!-- <link id="favicon" rel="icon" type="image/x-icon" href="{{ url_for('static', path='/favicon/favicon.ico') }}"> -->
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='/favicon/apple-touch-icon.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', path='/favicon/favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', path='/favicon/favicon-16x16.png') }}">
@@ -69,26 +70,27 @@
         var pollingInterval;
         const promptInput = document.getElementById('prompt');
         promptInput.value = getRandomElement(nouns);
-
-        document.getElementById('generateForm').addEventListener('submit', async function (event) {
+        document.getElementById('generateForm').addEventListener('submit', function (event) {
             event.preventDefault();
             submitButton.disabled = true;
             var prompt = document.getElementById('prompt').value;
             var guidance = document.getElementById('guidance').value;
 
-            try {
-                const response = await fetch('/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        prompt: prompt,
-                        guidance_scale: guidance
-                    })
-                });
-                const data = await response.json();
-                task_id = data.task_id;
+            fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    guidance_scale: guidance
+                })
+            }
+
+            )
+                .then(response => response.json())
+                .then(data => {
+                    task_id = data.task_id;
                     progressBar.value = 0
                     progressBarDiv.style.display = "block";
                     var estimatedDurationSecs = formatDuration(data.estimated_duration);
@@ -120,46 +122,52 @@
 
                         }
                     }, 1000);
-            } catch (error) {
-                console.error('Error:', error);
-            }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
         });
 
-        async function checkStatus() {
-            try {
-                const response = await fetch(`/tasks/${task_id}/status`);
-                const data = await response.json();
-                return data.status;
-            } catch (error) {
-                console.error('Error:', error);
-                return "error";
-            }
+        function checkStatus() {
+            return fetch(`/tasks/${task_id}/status`)
+                .then(response => response.json())
+                .then(data => {
+                    return data.status;
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    return "error";
+                });
         };
-        async function fetchPreview(task_id, retries = 10, retryInterval = 1000) {
+        function fetchPreview(task_id, retries = 10, retryInterval = 1000) {
             const previewResultsDiv = document.getElementById('previewResults');
 
-            try {
-                const response = await fetch(`/tasks/${task_id}/preview`);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const blob = await response.blob();
-                var url = URL.createObjectURL(blob);
-                var img = document.createElement('img');
-                img.src = url;
-                img.style.maxWidth = '100%'; // To ensure the image fits in the container
-                previewResultsDiv.prepend(img);
-                removeSpinners();
-                submitButton.disabled = false;
-            } catch (error) {
-                if (retries > 0) {
-                    console.log(`Fetch failed, retrying in ${retryInterval}ms...`);
-                    setTimeout(() => fetchPreview(task_id, retries - 1, retryInterval), retryInterval);
-                } else {
-                    console.error('Error:', error);
-                }
-            }
+            fetch(`/tasks/${task_id}/preview`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    var url = URL.createObjectURL(blob);
+                    var img = document.createElement('img');
+                    img.src = url;
+                    img.style.maxWidth = '100%'; // To ensure the image fits in the container
+                    previewResultsDiv.prepend(img);
+                    removeSpinners();
+                    submitButton.disabled = false;
+                })
+                .catch((error) => {
+                    if (retries > 0) {
+                        console.log(`Fetch failed, retrying in ${retryInterval}ms...`);
+                        setTimeout(() => fetchPreview(task_id, retries - 1, retryInterval), retryInterval);
+                    } else {
+                        console.error('Error:', error);
+                    }
+                });
         }
+
         function createDownloadButton(task_id) {
             const downloadButton = document.createElement("button");
             downloadButton.textContent = `Download task ${task_id}`;
