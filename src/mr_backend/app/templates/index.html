@@ -18,6 +18,7 @@
         <form id="generateForm">
             <label for="prompt">Prompt:</label>
             <input type="text" id="prompt" name="prompt">
+            <button type="button" id="random-prompt-button">Random Prompt</button>
             <label for="guidance">Guidance Scale: (defaults to 4.0) — A higher guidance scale value encourages the model
                 to generate images closely linked to the text prompt at the expense of lower image quality. Guidance
                 scale is enabled when guidance_scale > 1.</label>
@@ -62,6 +63,7 @@
             "a quince", "a rhinoceros", "a starfish", "a turkey", "a ukelele", "a vacuum"
         ];
         var task_id;
+        var randomPromptButton = document.getElementById('random-prompt-button');
         var progressBarDiv = document.getElementById('progress-div');
         var progressBar = document.getElementById('progress-bar');
         var progressText = document.getElementById('progress-text');
@@ -70,6 +72,9 @@
         const promptInput = document.getElementById('prompt');
         promptInput.value = getRandomElement(nouns);
 
+        randomPromptButton.addEventListener('click', function(){
+            promptInput.value = getRandomElement(nouns);
+        }); 
         document.getElementById('generateForm').addEventListener('submit', async function (event) {
             event.preventDefault();
             submitButton.disabled = true;
