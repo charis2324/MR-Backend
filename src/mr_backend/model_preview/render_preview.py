@@ -27,12 +27,12 @@ def parse_lines(lines):
         elif data[0] == "f":
             triangles.append([int(data[1]) - 1, int(data[2]) - 1, int(data[3]) - 1])
 
-    mesh = {
+    mesh_dict = {
         "vertices": np.array(vertices, dtype=np.float32),
         "triangles": np.array(triangles, dtype=np.int32),
         "colors": np.array(colors, dtype=np.float32),
     }
-    return mesh
+    return mesh_dict
 
 
 def render_3d_object(file_or_bytes_or_str):
