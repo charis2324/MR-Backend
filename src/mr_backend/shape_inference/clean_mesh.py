@@ -15,12 +15,13 @@ def clean_mesh(mesh_dict):
     if not mesh.is_winding_consistent:
         print("The mesh's winding order is inconsistent, attempting to fix.")
         mesh.fix_winding()
+
+    remove_isolated(mesh)
+
     if not mesh.is_watertight:
         print("The mesh is not watertight, attempting to fill holes.")
         mesh.fill_holes()
 
-    remove_isolated(mesh)
-    mesh.fill_holes()
     decimated_mesh = decimate_mesh(mesh)
     print(f"Decimated mesh: {decimated_mesh}")
     map_nearest_color_vertices(decimated_mesh, mesh)
