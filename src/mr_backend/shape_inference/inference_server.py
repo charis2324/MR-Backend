@@ -71,7 +71,7 @@ def inference_thread():
         images = pipe(
             prompt,
             guidance_scale=guidance_scale,
-            num_inference_steps=64,
+            num_inference_steps=100,
             frame_size=256,
             output_type="mesh",
         ).images

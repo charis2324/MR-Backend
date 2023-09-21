@@ -19,10 +19,10 @@
             <label for="prompt">Prompt:</label>
             <input type="text" id="prompt" name="prompt">
             <button type="button" id="random-prompt-button">Random Prompt</button>
-            <label for="guidance">Guidance Scale: (defaults to 4.0) — A higher guidance scale value encourages the model
+            <label for="guidance">Guidance Scale: (defaults to 15.0) — A higher guidance scale value encourages the model
                 to generate images closely linked to the text prompt at the expense of lower image quality. Guidance
                 scale is enabled when guidance_scale > 1.</label>
-            <input type="number" id="guidance" name="guidance_scale" min="0" max="50" value="4">
+            <input type="number" id="guidance" name="guidance_scale" min="0" max="50" value="15">
             <button type="submit" id="submit-button">Submit</button>
         </form>
         <div id="response"></div>
@@ -62,6 +62,97 @@
             "an iguana", "a jelly", "a koala", "a lizard", "a mushroom", "a nest", "an ostrich", "a peacock",
             "a quince", "a rhinoceros", "a starfish", "a turkey", "a ukelele", "a vacuum"
         ];
+        let prompts = [
+    "a polar bear",
+    "a bonfire",
+    "a lion",
+    "a donut with blue icing",
+    "a voxelized cat",
+    "mango sorbet cone",
+    "a wedding cake",
+    "chicken pot pie",
+    "a basket of fruits",
+    "a hotdog",
+    "a plate of crispy french fries",
+    "a traffic light",
+    "a bike that looks like a watermelon",
+    "a boat that looks like a pineapple",
+    "a yield sign",
+    "a submarine",
+    "a sports car",
+    "a ferryboat",
+    "an ambulance",
+    "a vintage car",
+    "a luxury car",
+    "a chair that looks like a pineapple",
+    "a chair that looks like a vegetable",
+    "a chair that looks like a bush",
+    "a chair that looks like a tiger",
+    "a chair that looks like a hot tub",
+    "the person is jumping",
+    "the person is standing",
+    "the person is bending over",
+    "a person that looks like a giraffe",
+    "a person that looks like a cheetah",
+    "a pair of jeans",
+    "a formal suit",
+    "apple shoes",
+    "a purple boot",
+    "a pair of goggles"
+];
+let furniturePrompts = [
+    "a chair made of bamboo",
+    "an antique mahogany table",
+    "a modern minimalist sofa",
+    "a bed with a built-in bookshelf",
+    "an office chair with lumbar support",
+    "a dresser with a mirror",
+    "a wooden rocking chair",
+    "a dining table that seats eight",
+    "a futon that converts into a bed",
+    "a coffee table with storage compartments",
+    "a nightstand with a built-in lamp",
+    "a bunk bed for kids",
+    "an armchair with a footrest",
+    "a bookshelf that hangs on the wall",
+    "a desk with a hutch",
+    "a bar stool with a backrest",
+    "a patio table with an umbrella",
+    "a vanity with a stool",
+    "a sectional sofa for the living room",
+    "a loft bed with a desk underneath",
+    "a TV stand with shelves",
+    "a bedside table with a drawer",
+    "a recliner for relaxing",
+    "an ottoman with storage inside",
+    "a chaise lounge for the bedroom",
+    "a wardrobe with sliding doors",
+    "a kitchen island with a butcher block top",
+    "an adjustable height desk",
+    "a console table for the hallway",
+    "a shoe rack for the entryway",
+    "a cabinet with glass doors",
+    "a bench for the end of the bed",
+    "a chest of drawers for the bedroom",
+    "a coat rack for the foyer",
+    "a sideboard for the dining room",
+    "a bean bag chair for the game room",
+    "a sleigh bed for the master bedroom",
+    "a roll-top desk for the office",
+    "a daybed for the guest room",
+    "a crib for the nursery",
+    "a settee for the sitting room",
+    "a drafting table for the studio",
+    "a Murphy bed for the small apartment",
+    "a chifforobe for extra storage",
+    "a hope chest for keepsakes",
+    "a credenza for the office",
+    "a divan for lounging",
+    "a chesterfield sofa for the living room",
+    "a canopied porch swing",
+    "a breakfast nook table",
+    "an armoire for the bedroom"
+];
         var task_id;
         var randomPromptButton = document.getElementById('random-prompt-button');
         var progressBarDiv = document.getElementById('progress-div');
@@ -70,10 +161,10 @@
         var submitButton = document.getElementById('submit-button');
         var pollingInterval;
         const promptInput = document.getElementById('prompt');
-        promptInput.value = getRandomElement(nouns);
+        promptInput.value = getRandomElement(furniturePrompts);
 
         randomPromptButton.addEventListener('click', function(){
-            promptInput.value = getRandomElement(nouns);
+            promptInput.value = getRandomElement(furniturePrompts);
         }); 
         document.getElementById('generateForm').addEventListener('submit', async function (event) {
             event.preventDefault();
