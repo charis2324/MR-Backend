@@ -2,11 +2,20 @@ import trimesh
 import numpy as np
 
 
-def clean_mesh(mesh_dict):
-    colors_uint8 = (mesh_dict["colors"] * 255).astype(np.uint8)
+def split_model_output(image):
+    verts = image.verts.detach().cpu().numpy()
+    faces = image.faces.cpu().numpy()
+    vertex_colors = np.stack(
+        [image.vertex_channels[x].detach().cpu().numpy() for x in "RGB"], axis=1
+    )
+    return verts, faces, vertex_colors
+
+
+def clean_mesh(verts, faces, vertex_colors):
+    colors_uint8 = (vertex_colors * 255).astype(np.uint8)
     mesh = trimesh.Trimesh(
-        vertices=mesh_dict["vertices"],
-        faces=mesh_dict["triangles"],
+        vertices=verts,
+        faces=faces,
         vertex_colors=colors_uint8,
         process=True,
         validate=True,

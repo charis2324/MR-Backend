@@ -15,13 +15,14 @@ from mr_backend.database.db_manager import (
 )
 from mr_backend.state import inference_thread_busy, inference_thread_ready
 from mr_backend.model_preview.render_preview import parse_lines
-from .clean_mesh import clean_mesh
+from .clean_mesh import clean_mesh, split_model_output
 
 
 def export_ai_model_output_to_obj_str(mesh):
     verts = mesh.verts.detach().cpu().numpy()
     faces = mesh.faces.cpu().numpy()
-
+    print(f"verts: {verts.shape}")
+    print(f"verts: {faces.shape}")
     vertex_colors = np.stack(
         [mesh.vertex_channels[x].detach().cpu().numpy() for x in "RGB"], axis=1
     )
@@ -76,7 +77,7 @@ def inference_thread():
             output_type="mesh",
         ).images
         # Save to str
-        return export_ai_model_output_to_obj_str(images[0])
+        return images[0]
 
     print("Running inference thread...")
     # Load the model
@@ -98,12 +99,10 @@ def inference_thread():
         inference_thread_busy.set()
         start_time = time()
         try:
-            obj_str = generateWithPipe(task.prompt, task.guidance_scale)
-
-            mesh_dict = parse_lines(obj_str.split("\n"))
-            cleaned_mesh = clean_mesh(mesh_dict)
+            image = generateWithPipe(task.prompt, task.guidance_scale)
+            verts, faces, colors = split_model_output(image)
+            cleaned_mesh = clean_mesh(verts, faces, colors)
             obj_str = export_trimesh_to_obj_str(cleaned_mesh)
-
             store_obj_file(uuid=task.task_id, obj_str=obj_str)
             finish_task(task.task_id, timedelta(seconds=time() - start_time))
             create_model_preview(task.task_id)
