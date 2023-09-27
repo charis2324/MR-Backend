@@ -2,12 +2,12 @@ from datetime import timedelta
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse, StreamingResponse
 
 from mr_backend.database.db_manager import (
     add_task,
     get_actual_durations,
-    get_obj_file,
+    get_trimesh,
     get_task_status,
     get_waiting_tasks_count,
     get_preview_status,
@@ -21,8 +21,15 @@ from .models import (
     TaskStatus,
     TaskStatusEnum,
 )
+from mr_backend.shape_inference.inference_server import export_trimesh_to_obj_str
 from .utils import get_duration_estimation
 from gzip import decompress
+from trimesh import Trimesh
+from tempfile import TemporaryDirectory
+from zipfile import ZipFile
+import os
+from io import BytesIO
+from time import time
 
 router = APIRouter()
 
@@ -73,10 +80,32 @@ def read_task_status(task_id: str):
 
 @router.get("/tasks/{task_id}/results")
 def get_task_results(task_id: str):
+    start = time()
     status = get_task_status(task_id)
     if status == TaskStatusEnum.completed:
-        obj_file_str = get_obj_file(task_id)
-        return Response(content=obj_file_str, media_type="text/plain")
+        trimesh = get_trimesh(task_id)
+        with TemporaryDirectory() as temp_dir:
+            obj_path = os.path.join(temp_dir, f"{task_id}.obj")
+            if hasattr(trimesh.visual, "vertex_colors"):
+                trimesh.export(obj_path)
+            else:
+                obj_str = export_trimesh_to_obj_str(trimesh)
+                with open(obj_path, "w") as f:
+                    f.write(obj_str)
+            with TemporaryDirectory() as zip_dir:
+                zip_path = os.path.join(zip_dir, f"{task_id}.zip")
+                with ZipFile(zip_path, "w") as zipf:
+                    for filename in os.listdir(temp_dir):
+                        file_path = os.path.join(temp_dir, filename)
+                        if os.path.isfile(file_path):
+                            zipf.write(file_path, arcname=filename)
+                with open(zip_path, "rb") as f:
+                    zip_bytes = f.read()
+        print(f"time: {time()-start}")
+        return StreamingResponse(
+            BytesIO(zip_bytes),
+            media_type="application/zip",
+        )
     else:
         raise HTTPException(
             status_code=400,

@@ -8,6 +8,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func
 from mr_backend.app.models import TaskStatusEnum
 
+from joblib import load, dump
+from io import BytesIO
+from trimesh import Trimesh
+
 # Define the SQLAlchemy's Base model to maintain catalog of classes and tables
 Base = declarative_base()
 
@@ -29,9 +33,9 @@ class GenerationTask(Base):
 
 
 class ModelObj(Base):
-    __tablename__ = "model_objs"
+    __tablename__ = "models"
     uuid = Column(String, primary_key=True)
-    obj_file = Column(LargeBinary)
+    trimesh = Column(LargeBinary)
 
 
 class ModelPreview(Base):
@@ -172,20 +176,22 @@ def get_earliest_waiting_task():
         db.close()
 
 
-def store_obj_file(uuid: str, obj_str: str):
+def store_trimesh(uuid: str, trimesh: Trimesh):
+    dump_buffer = BytesIO()
+    dump(trimesh, dump_buffer, compress=("gzip", 3))
+    dump_buffer.seek(0)
     db = SessionLocal()
-    compress_obj_str = compress(obj_str.encode("utf-8"))
-    model = ModelObj(uuid=uuid, obj_file=compress_obj_str)
+    model = ModelObj(uuid=uuid, trimesh=dump_buffer.getvalue())
     db.add(model)
     db.commit()
     db.close()
 
 
-def get_obj_file(uuid: str):
+def get_trimesh(uuid: str) -> Trimesh:
     db = SessionLocal()
-    obj_file = db.query(ModelObj.obj_file).filter(ModelObj.uuid == uuid).one()[0]
+    dump_buffer = db.query(ModelObj.trimesh).filter(ModelObj.uuid == uuid).one()[0]
     db.close()
-    return decompress(obj_file).decode()
+    return load(BytesIO(dump_buffer))
 
 
 def create_model_preview(uuid: str):

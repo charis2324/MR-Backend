@@ -47,10 +47,8 @@ def mesh_dict_to_trimesh(mesh_dict):
     return mesh
 
 
-def render_preview(mesh_dict, num_frames=180):
-    # cleaned_mesh = clean_mesh.clean_mesh(mesh_dict)
-    mesh = mesh_dict_to_trimesh(mesh_dict)
-    mesh = pyrender.Mesh.from_trimesh(mesh)
+def render_preview(trimesh, num_frames=180):
+    mesh = pyrender.Mesh.from_trimesh(trimesh)
     scene = pyrender.Scene(ambient_light=np.array([1, 1, 1, 1.0]))
     scene.add(mesh)
     # pyrender.Viewer(scene, use_raymond_lighting=False)

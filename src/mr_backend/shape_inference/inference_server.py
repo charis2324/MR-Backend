@@ -10,7 +10,7 @@ from mr_backend.database.db_manager import (
     create_model_preview,
     finish_task,
     get_earliest_waiting_task,
-    store_obj_file,
+    store_trimesh,
     update_task_status,
 )
 from mr_backend.state import inference_thread_busy, inference_thread_ready
@@ -102,8 +102,7 @@ def inference_thread():
             image = generateWithPipe(task.prompt, task.guidance_scale)
             verts, faces, colors = split_model_output(image)
             cleaned_mesh = clean_mesh(verts, faces, colors)
-            obj_str = export_trimesh_to_obj_str(cleaned_mesh)
-            store_obj_file(uuid=task.task_id, obj_str=obj_str)
+            store_trimesh(task.task_id, cleaned_mesh)
             finish_task(task.task_id, timedelta(seconds=time() - start_time))
             create_model_preview(task.task_id)
         except Exception as e:
