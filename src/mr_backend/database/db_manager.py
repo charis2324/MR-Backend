@@ -1,50 +1,102 @@
 from datetime import datetime, timedelta
 from gzip import compress, decompress
-
-from sqlalchemy import Column, DateTime, Enum, Float, LargeBinary, String, create_engine
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    LargeBinary,
+    String,
+    create_engine,
+    ForeignKey,
+    Integer,
+)
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.sql import func
 from mr_backend.app.models import TaskStatusEnum
 
 from joblib import load, dump
 from io import BytesIO
 from trimesh import Trimesh
+from uuid import uuid4
 
 # Define the SQLAlchemy's Base model to maintain catalog of classes and tables
 Base = declarative_base()
 
 
-# Defining the GenerationTask model
 class GenerationTask(Base):
     __tablename__ = "tasks"
 
-    task_id = Column(String, primary_key=True)
-    prompt = Column(String)
+    task_id = Column(String, ForeignKey("model_info.uuid"), primary_key=True)
+    # model_uuid = Column(String, ForeignKey("model_info.uuid"))
+    user_uuid = Column(String, ForeignKey("users.uuid"), nullable=False)
+    prompt = Column(String, nullable=False)
     guidance_scale = Column(Float)
     estimated_duration = Column(Float)  # This is timedelta in seconds
     actual_duration = Column(Float)
     status = Column(Enum(TaskStatusEnum), index=True)
-    created_at = Column(
-        DateTime(timezone=False), default=datetime.now, index=True
-    )  # To know when each task was created
+    created_at = Column(DateTime(timezone=False), default=datetime.now, index=True)
     completed_at = Column(DateTime(timezone=False), index=True)
+    model_info = relationship(
+        "ModelInfo", back_populates="generation_task", uselist=False
+    )
+    user = relationship("User", back_populates="tasks")
 
 
 class ModelObj(Base):
-    __tablename__ = "models"
-    uuid = Column(String, primary_key=True)
+    __tablename__ = "model_objs"
+
+    uuid = Column(String, ForeignKey("model_info.uuid"), primary_key=True)
     trimesh = Column(LargeBinary)
+    model_info = relationship("ModelInfo", back_populates="model_obj", uselist=False)
 
 
 class ModelPreview(Base):
     __tablename__ = "model_previews"
-    uuid = Column(String, primary_key=True)
+
+    uuid = Column(String, ForeignKey("model_info.uuid"), primary_key=True)
     preview_file = Column(LargeBinary)
     preview_file_type = Column(String)
     status = Column(Enum(TaskStatusEnum))
     created_at = Column(DateTime(timezone=False), default=datetime.now, index=True)
+    model_info = relationship(
+        "ModelInfo", back_populates="model_preview", uselist=False
+    )
+
+
+class ModelInfo(Base):
+    __tablename__ = "model_info"
+
+    uuid = Column(String, primary_key=True)
+    name = Column(String)
+    user_uuid = Column(String, ForeignKey("users.uuid"), index=True)
+    description = Column(String)
+    scale_type = Column(Integer)
+    scale_x = Column(Float)
+    scale_y = Column(Float)
+    scale_z = Column(Float)
+    source = Column(String)
+    model_preview = relationship(
+        "ModelPreview", back_populates="model_info", uselist=False
+    )
+    model_obj = relationship("ModelObj", back_populates="model_info", uselist=False)
+    generation_task = relationship(
+        "GenerationTask", back_populates="model_info", uselist=False
+    )
+    user = relationship("User", back_populates="model_infos")
+
+
+class User(Base):
+    __tablename__ = "users"
+    uuid = Column(String, primary_key=True)
+    username = Column(String, unique=True)
+    hashed_password = Column(String)
+    created_at = Column(DateTime(timezone=False), default=datetime.now)
+    model_infos = relationship("ModelInfo", back_populates="user")
+    tasks = relationship("GenerationTask", back_populates="user")
 
 
 # Initialize the database
@@ -54,14 +106,102 @@ Base.metadata.create_all(engine)
 SessionLocal = sessionmaker(bind=engine)
 
 
+def create_model_info_from_task(task_id: str):
+    db = SessionLocal()
+    # Retrieve the task
+    task = db.query(GenerationTask).filter(GenerationTask.task_id == task_id).first()
+
+    if task is not None:
+        # Create a new ModelInfo object
+        new_model_info = ModelInfo(
+            uuid=task_id,
+            name=task.prompt,
+            user_uuid=task.user_uuid,
+            scale_type=1,
+            scale_x=1,
+            scale_y=1,
+            scale_z=1,
+            source="AI",
+        )
+
+        # Add the new ModelInfo object to the session
+        db.add(new_model_info)
+
+        # Commit the session to write the changes to the database
+        db.commit()
+        db.close()
+        return new_model_info
+    else:
+        db.close()
+        return None
+
+
+def get_model_preview_status(uuid: str):
+    db = SessionLocal()
+    model_preview = db.query(ModelPreview).filter(ModelPreview.uuid == uuid).first()
+    db.close()
+    if model_preview is not None:
+        return model_preview.status
+    else:
+        return None
+
+
+def get_task_user_uuid(task_id: str):
+    db = SessionLocal()
+    task = db.query(GenerationTask).filter(GenerationTask.task_id == task_id).first()
+    db.close()
+    if task is not None:
+        return task.user_uuid
+    else:
+        return None
+
+
+def create_user(username: str, hashed_password: str) -> User | None:
+    db = SessionLocal()
+    # Create a new user instance
+    user = User(
+        uuid=str(uuid4()),
+        username=username,
+        hashed_password=hashed_password,
+    )
+    try:
+        # Add the new user to the session and commit
+        db.add(user)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        db.close()
+        return None
+    # Refresh the user instance to get any server-populated columns, then return it
+    db.refresh(user)
+    db.close()
+    return user
+
+
+def get_user_by_username(username):
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == username).one()
+        return user
+    except:
+        return None
+    finally:
+        db.close()
+
+
 def add_task(
-    task_id: str, prompt: str, guidance_scale: float, estimated_duration: timedelta
+    task_id: str,
+    user_uuid: str,
+    prompt: str,
+    guidance_scale: float,
+    estimated_duration: timedelta,
 ):
     db = SessionLocal()
 
     # Create a new task
     task = GenerationTask(
         task_id=task_id,
+        user_uuid=user_uuid,
         prompt=prompt,
         guidance_scale=guidance_scale,
         estimated_duration=estimated_duration.total_seconds(),

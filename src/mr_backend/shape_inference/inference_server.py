@@ -12,6 +12,7 @@ from mr_backend.database.db_manager import (
     get_earliest_waiting_task,
     store_trimesh,
     update_task_status,
+    create_model_info_from_task,
 )
 from mr_backend.state import inference_thread_busy, inference_thread_ready
 from mr_backend.model_preview.render_preview import parse_lines
@@ -104,7 +105,9 @@ def inference_thread():
             cleaned_mesh = clean_mesh(verts, faces, colors)
             store_trimesh(task.task_id, cleaned_mesh)
             finish_task(task.task_id, timedelta(seconds=time() - start_time))
+            create_model_info_from_task(task.task_id)
             create_model_preview(task.task_id)
+
         except Exception as e:
             print(f"Error during inference for task {task.task_id}: {str(e)}")
             update_task_status(task.task_id, TaskStatusEnum.failed)

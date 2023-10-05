@@ -10,7 +10,9 @@ from mr_backend.model_preview.render_preview import preview_generation_thread
 from mr_backend.shape_inference.inference_server import inference_thread
 from mr_backend.state import inference_thread_ready
 
-from . import tasks
+from .tasks import task_router
+from .auth import auth_router
+from .user import user_router
 
 inference_thread = Thread(target=inference_thread, daemon=True)
 inference_thread.start()
@@ -20,7 +22,9 @@ inference_thread_ready.wait()
 
 app = FastAPI()
 app.add_middleware(GZipMiddleware, minimum_size=1000)
-app.include_router(tasks.router)
+app.include_router(auth_router)
+app.include_router(task_router)
+app.include_router(user_router)
 
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=templates_dir)

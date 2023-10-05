@@ -1,9 +1,9 @@
 from datetime import timedelta
 from uuid import uuid4
 
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Depends
 from fastapi.responses import Response, FileResponse, StreamingResponse
-
+from typing import Annotated
 from mr_backend.database.db_manager import (
     add_task,
     get_actual_durations,
@@ -12,6 +12,8 @@ from mr_backend.database.db_manager import (
     get_waiting_tasks_count,
     get_preview_status,
     get_preview,
+    get_task_user_uuid,
+    get_model_preview_status,
 )
 
 from ..state import inference_thread_busy
@@ -20,22 +22,28 @@ from .models import (
     GenerationTaskResponse,
     TaskStatus,
     TaskStatusEnum,
+    UserInDB,
 )
+from .auth import get_current_user
 from mr_backend.shape_inference.inference_server import export_trimesh_to_obj_str
 from .utils import get_duration_estimation
 from gzip import decompress
 from trimesh import Trimesh
+from trimesh.exchange.obj import export_obj
 from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 import os
 from io import BytesIO
 from time import time
 
-router = APIRouter()
+task_router = APIRouter()
 
 
-@router.post("/generate", response_model=GenerationTaskResponse)
-def receive_generation_equest(request_body: GenerationTaskRequest = Body(...)):
+@task_router.post("/generate", response_model=GenerationTaskResponse)
+def receive_generation_equest(
+    current_user: Annotated[UserInDB, Depends(get_current_user)],
+    request_body: GenerationTaskRequest = Body(...),
+):
     prompt = request_body.prompt
     guidance_scale = request_body.guidance_scale
     task_id = str(uuid4())
@@ -44,14 +52,14 @@ def receive_generation_equest(request_body: GenerationTaskRequest = Body(...)):
             get_actual_durations(5), get_waiting_tasks_count(), inference_thread_busy
         )
     )
-    add_task(task_id, prompt, guidance_scale, estimated_duration)
+    add_task(task_id, current_user.uuid, prompt, guidance_scale, estimated_duration)
     print(estimated_duration)
     return GenerationTaskResponse(
         task_id=task_id, estimated_duration=estimated_duration
     )
 
 
-@router.get("/tasks/{task_id}/status", response_model=TaskStatus)
+@task_router.get("/tasks/{task_id}/result/status", response_model=TaskStatus)
 def read_task_status(task_id: str):
     status = get_task_status(task_id)
     if status == TaskStatusEnum.completed:
@@ -78,7 +86,7 @@ def read_task_status(task_id: str):
     )
 
 
-@router.get("/tasks/{task_id}/results")
+@task_router.get("/tasks/{task_id}/result")
 def get_task_results(task_id: str):
     start = time()
     status = get_task_status(task_id)
@@ -86,9 +94,14 @@ def get_task_results(task_id: str):
         trimesh = get_trimesh(task_id)
         with TemporaryDirectory() as temp_dir:
             obj_path = os.path.join(temp_dir, f"{task_id}.obj")
-            if hasattr(trimesh.visual, "vertex_colors"):
-                trimesh.export(obj_path)
+            if not hasattr(
+                trimesh.visual, "vertex_colors"
+            ):  # This line doesn't looks right?? sus
+                print("I don't have vertex_colors!")
+                trimesh.export(obj_path, return_texture=True)
+                # export_obj(trimesh, return_texture=True)
             else:
+                print("I have vertex_colors!")
                 obj_str = export_trimesh_to_obj_str(trimesh)
                 with open(obj_path, "w") as f:
                     f.write(obj_str)
@@ -113,7 +126,34 @@ def get_task_results(task_id: str):
         )
 
 
-@router.get("/tasks/{task_id}/preview")
+@task_router.get("/tasks/{task_id}/preview/status", response_model=TaskStatus)
+def read_task_preview_status(task_id: str):
+    status = get_model_preview_status(task_id)
+    if status == TaskStatusEnum.completed:
+        return TaskStatus(
+            task_id=task_id,
+            status=TaskStatusEnum.completed,
+            message="Your task preview has been completed. You may now retrieve the results.",
+        )
+    if status == TaskStatusEnum.waiting or status == TaskStatusEnum.processing:
+        return TaskStatus(
+            task_id=task_id,
+            status=TaskStatusEnum.processing,
+            message="Your task preview is still being processed.",
+        )
+    if status == TaskStatusEnum.failed:
+        return TaskStatus(
+            task_id=task_id,
+            status=TaskStatusEnum.failed,
+            message="Your task preview failed.",
+        )
+    raise HTTPException(
+        status_code=400,
+        detail="Invalid task ID. Please check your task ID.",
+    )
+
+
+@task_router.get("/tasks/{task_id}/preview")
 def get_task_results(task_id: str):
     status = get_preview_status(task_id)
     if status == TaskStatusEnum.completed:

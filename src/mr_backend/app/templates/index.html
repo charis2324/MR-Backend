@@ -785,7 +785,7 @@ let furniturePrompts = [
             downloadButton.textContent = `Download task ${task_id}`;
             downloadButton.onclick = function() {
                 var a = document.createElement('a');
-                a.href = `/tasks/${task_id}/results`;
+                a.href = `/tasks/${task_id}/result`;
                 a.download = `${task_id}_results.zip`;
                 document.body.appendChild(a);
                 a.click();

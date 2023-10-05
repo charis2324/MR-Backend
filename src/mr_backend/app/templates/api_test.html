@@ -138,7 +138,7 @@
 
             var task_id = document.getElementById('results_task_id').value;
 
-            fetch(`/tasks/${task_id}/results`)
+            fetch(`/tasks/${task_id}/result`)
             .then(response => response.text())
             .then(data => {
 
