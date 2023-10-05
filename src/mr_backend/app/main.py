@@ -42,3 +42,14 @@ async def read_items(request: Request):
 @app.get("/api_test", response_class=HTMLResponse)
 async def read_items(request: Request):
     return templates.TemplateResponse("api_test.html", {"request": request})
+
+
+@app.get("/register", response_class=HTMLResponse)
+async def read_items(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def read_items(request: Request):
+    print(request)
+    return templates.TemplateResponse("login.html", {"request": request})

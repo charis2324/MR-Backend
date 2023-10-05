@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MR Backend</title>
+        <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='/favicon/apple-touch-icon.png') }}">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', path='/favicon/favicon-32x32.png') }}">
+        <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', path='/favicon/favicon-16x16.png') }}">
+        <link rel="manifest" href="{{ url_for('static', path='/favicon/site.webmanifest') }}">
+    </head>
+<body>
+    <section>
+        <h2>Register</h2>
+        <form id="register-form">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            <div id="username-error" style="color: red; display: none;">Username should be at least 3 characters and contain only a-z, A-Z, 0-9, _.</div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <div id="password-error" style="color: red; display: none;">Username should be at least 3 characters and contain only a-z, A-Z, 0-9, _.</div>
+            <button type="submit">Register</button>
+            <div id="error-detail" style="color: red; display: none;"></div>
+        </form>
+    </section>
+    
+    <script>
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Check username and password against constraints
+            const usernameRegex = /^[a-zA-Z0-9_]{3,50}$/;
+            const passwordRegex = /^[a-zA-Z0-9_]{3,50}$/;
+            const usernameTest = usernameRegex.test(username);
+            const passwordTest = passwordRegex.test(password);
+            if (!usernameTest) {
+                document.getElementById('username-error').style.display = 'block';
+            } else {
+                document.getElementById('username-error').style.display = 'none';
+            }
+            
+            if (!passwordTest) {
+                document.getElementById('password-error').style.display = 'block';
+            } else {
+                document.getElementById('password-error').style.display = 'none';
+            }
+    
+            if(passwordTest && usernameTest){
+                const userData = {
+                    "username": username,
+                    "password": password
+                }
+    
+                fetch("/register", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                })
+                .then(response=>{
+                    if(!response.ok){
+                        return response.json().then(err => { throw err; });
+                    }
+                    return response.json();
+                })
+                .then( data => {
+                    alert(data.message)
+                    window.location = "/login";
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    var errorDiv = document.getElementById("error-detail");
+                    errorDiv.style.display = 'block';
+                    errorDiv.innerText = error.detail;
+                })
+            }
+        });
+    </script>
+</body>
+</html>

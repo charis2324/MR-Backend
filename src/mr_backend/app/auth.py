@@ -1,6 +1,7 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, status
+from fastapi.responses import Request, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from mr_backend.database.db_manager import get_user_by_username
@@ -19,7 +20,11 @@ def is_authenticated_user(username, password) -> bool:
     return verify_password(password, user.hashed_password)
 
 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInDB:
+def get_current_user(
+    token: Optional[Annotated[str, Depends(oauth2_scheme)]] = Cookie(
+        None, alias="access_token"
+    )
+) -> UserInDB:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -36,7 +41,9 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInDB:
 
 
 @auth_router.post("/token", response_model=Token)
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+def login_for_access_token(
+    response: Response, form_data: OAuth2PasswordRequestForm = Depends()
+):
     if not is_authenticated_user(form_data.username, form_data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -44,4 +51,6 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_access_token(data={"sub": form_data.username})
+    # Set the access token as a HTTPOnly cookie
+    response.set_cookie(key="access_token", value=access_token, httponly=True, path="/")
     return {"access_token": access_token, "token_type": "bearer"}

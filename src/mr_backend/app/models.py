@@ -50,7 +50,6 @@ class UserCreate(BaseModel):
     username: constr(pattern="^[a-zA-Z0-9_]+$") = Field(
         ..., min_length=3, max_length=50
     )
-    password: constr(
-        # regex="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$"
-        pattern="^[a-zA-Z0-9_]+$"
-    ) = Field(..., min_length=3, max_length=50)
+    password: constr(pattern="^[a-zA-Z0-9_]+$") = Field(
+        ..., min_length=3, max_length=50
+    )

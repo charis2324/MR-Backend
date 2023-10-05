@@ -748,7 +748,7 @@ let furniturePrompts = [
 
         async function checkStatus() {
             try {
-                const response = await fetch(`/tasks/${task_id}/status`);
+                const response = await fetch(`/tasks/${task_id}/result/status`);
                 const data = await response.json();
                 return data.status;
             } catch (error) {
