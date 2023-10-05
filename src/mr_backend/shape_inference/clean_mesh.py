@@ -1,5 +1,5 @@
-import trimesh
 import numpy as np
+import trimesh
 
 
 def split_model_output(image):

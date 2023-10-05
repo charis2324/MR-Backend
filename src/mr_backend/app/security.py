@@ -1,7 +1,8 @@
-from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from jose import jwt
 from typing import Optional
+
+from jose import jwt
+from passlib.context import CryptContext
 
 SECRET_KEY = "10609d6b5687ba13ba254f64239e1c0421d29dbdf3523439ebb713d115fefcc3"
 ALGORITHM = "HS256"

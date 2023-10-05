@@ -1,17 +1,18 @@
-from threading import Thread
 import os
+from threading import Thread
+
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.middleware.gzip import GZipMiddleware
 
 from mr_backend.model_preview.render_preview import preview_generation_thread
 from mr_backend.shape_inference.inference_server import inference_thread
 from mr_backend.state import inference_thread_ready
 
-from .tasks import task_router
 from .auth import auth_router
+from .tasks import task_router
 from .user import user_router
 
 inference_thread = Thread(target=inference_thread, daemon=True)

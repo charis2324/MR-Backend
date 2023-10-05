@@ -1,22 +1,31 @@
+import os
 from datetime import timedelta
-from uuid import uuid4
-
-from fastapi import APIRouter, Body, HTTPException, Depends
-from fastapi.responses import Response, FileResponse, StreamingResponse
+from gzip import decompress
+from io import BytesIO
+from tempfile import TemporaryDirectory
+from time import time
 from typing import Annotated
+from uuid import uuid4
+from zipfile import ZipFile
+
+from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi.responses import Response, StreamingResponse
+
 from mr_backend.database.db_manager import (
     add_task,
     get_actual_durations,
-    get_trimesh,
-    get_task_status,
-    get_waiting_tasks_count,
-    get_preview_status,
-    get_preview,
-    get_task_user_uuid,
     get_model_preview_status,
+    get_preview,
+    get_preview_status,
+    get_task_status,
+    get_task_user_uuid,
+    get_trimesh,
+    get_waiting_tasks_count,
 )
+from mr_backend.shape_inference.inference_server import export_trimesh_to_obj_str
 
 from ..state import inference_thread_busy
+from .auth import get_current_user
 from .models import (
     GenerationTaskRequest,
     GenerationTaskResponse,
@@ -24,17 +33,7 @@ from .models import (
     TaskStatusEnum,
     UserInDB,
 )
-from .auth import get_current_user
-from mr_backend.shape_inference.inference_server import export_trimesh_to_obj_str
 from .utils import get_duration_estimation
-from gzip import decompress
-from trimesh import Trimesh
-from trimesh.exchange.obj import export_obj
-from tempfile import TemporaryDirectory
-from zipfile import ZipFile
-import os
-from io import BytesIO
-from time import time
 
 task_router = APIRouter()
 

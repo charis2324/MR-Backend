@@ -7,15 +7,16 @@ from diffusers import DiffusionPipeline
 
 from mr_backend.app.models import TaskStatusEnum
 from mr_backend.database.db_manager import (
+    create_model_info_from_task,
     create_model_preview,
     finish_task,
     get_earliest_waiting_task,
     store_trimesh,
     update_task_status,
-    create_model_info_from_task,
 )
-from mr_backend.state import inference_thread_busy, inference_thread_ready
 from mr_backend.model_preview.render_preview import parse_lines
+from mr_backend.state import inference_thread_busy, inference_thread_ready
+
 from .clean_mesh import clean_mesh, split_model_output
 
 

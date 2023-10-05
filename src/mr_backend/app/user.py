@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
-from .models import UserCreate
-from .security import get_password_hash
+
 from mr_backend.database.db_manager import create_user
 
+from .models import UserCreate
+from .security import get_password_hash
 
 user_router = APIRouter()
 

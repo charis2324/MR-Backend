@@ -1,10 +1,12 @@
-from fastapi import Depends, HTTPException, status, APIRouter
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from .models import UserInDB
-from .security import create_access_token, verify_password, decode_access_token
-from .models import Token
-from mr_backend.database.db_manager import get_user_by_username
 from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
+from mr_backend.database.db_manager import get_user_by_username
+
+from .models import Token, UserInDB
+from .security import create_access_token, decode_access_token, verify_password
 
 auth_router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

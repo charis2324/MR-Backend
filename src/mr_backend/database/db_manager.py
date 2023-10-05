@@ -1,27 +1,27 @@
 from datetime import datetime, timedelta
 from gzip import compress, decompress
-from sqlalchemy.exc import IntegrityError
+from io import BytesIO
+from uuid import uuid4
+
+from joblib import dump, load
 from sqlalchemy import (
     Column,
     DateTime,
     Enum,
     Float,
+    ForeignKey,
+    Integer,
     LargeBinary,
     String,
     create_engine,
-    ForeignKey,
-    Integer,
 )
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.sql import func
-from mr_backend.app.models import TaskStatusEnum
-
-from joblib import load, dump
-from io import BytesIO
 from trimesh import Trimesh
-from uuid import uuid4
+
+from mr_backend.app.models import TaskStatusEnum
 
 # Define the SQLAlchemy's Base model to maintain catalog of classes and tables
 Base = declarative_base()
