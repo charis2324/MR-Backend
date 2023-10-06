@@ -19,6 +19,7 @@ from .auth import (
     get_current_user_update_token_or_redirect,
     update_token_cookie,
 )
+from .furniture import furniture_router
 from .models import UserInDB
 from .tasks import task_router
 from .user import user_router
@@ -34,6 +35,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.include_router(auth_router)
 app.include_router(task_router)
 app.include_router(user_router)
+app.include_router(furniture_router)
 
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=templates_dir)
@@ -77,3 +79,19 @@ async def read_items(request: Request):
 @app.get("/login", response_class=HTMLResponse)
 async def read_items(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.get("/gallery", response_class=HTMLResponse)
+async def read_items(
+    request: Request,
+    current_user_and_token: Annotated[
+        UserInDB, Depends(get_current_user_update_token_or_redirect)
+    ],
+):
+    response = templates.TemplateResponse(
+        "gallery.html",
+        {"request": request, "username": current_user_and_token["user"].username},
+    )
+    if current_user_and_token["new_token"]:
+        update_token_cookie(response, current_user_and_token["new_token"])
+    return response

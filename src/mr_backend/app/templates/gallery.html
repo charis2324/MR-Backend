@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MR Backend</title>
+    <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='/favicon/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', path='/favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', path='/favicon/favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', path='/favicon/site.webmanifest') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <!-- You can put your logo or app name here -->
+            <a class="home-anchor" href="/"><h2>MR Backend</h2></a>
+        </div>
+        <div class="nav">
+            <a class="nav-item" href="/">
+                <div class="nav-item-box">
+                <h4 class="nav-word">Generate</h4>
+                </div>
+            </a>
+            <a class="nav-item" href="/gallery">
+                <div class="nav-item-box">
+                <h4 class="nav-word">Gallery</h4>
+                </div>
+            </a>
+        </div>
+        <div class="user-info">
+            <div class="user-name" id="userName">Welcome back! <b>{{username}}</b></div>
+            <a href="/logout" class="log-out-button">Log Out</a>
+        </div>
+    </header>
+    <section>
+        <div id="model-info-card-container"></div>
+    </section>
+   
+    <script>
+    const cardWidth = 250;
+    const cardHeight = 380;
+    const container = document.querySelector('#model-info-card-container');
+    let skip = 0;
+    let limit = Math.floor(window.innerWidth / cardWidth);
+        function createModelInfoCard(model) {
+            let card = document.createElement('div');
+            card.className = 'model-info-card';
+            let modelName = capitalizeFirstLetter(model.name);
+            card.innerHTML = `
+                <div class="model-image">
+                    <img src="" alt="${modelName}" />
+                </div>
+                <div class="model-details">
+                    <h2>${modelName}</h2>
+                    <p>by <strong>${model.username}</strong> (${model.source})</p>
+                </div>
+            `;
+        
+            let imgElement = card.querySelector('.model-image img');
+            fetchImageAndUpdateCard(model.uuid, imgElement);
+            
+            return card;
+        }
+        
+        async function fetchImageAndUpdateCard(uuid, imgElement) {
+            let response = await fetch(`/tasks/${uuid}/preview`);
+            let data = await response.blob();
+            let imageUrl = URL.createObjectURL(data);
+        
+            imgElement.src = imageUrl;
+        }
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+        async function fetchFurnitureInfo() {
+            const response = await fetch(`/furnitures/info?skip=${skip}&limit=${limit}`);
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const furnitureInfos = await response.json();
+            return furnitureInfos;
+        }
+
+
+async function fetchAndDisplayFurnitureInfo(){
+    try {
+        const data = await fetchFurnitureInfo(skip, limit);
+        if (data.furniture_infos.length === 0) {
+            return false; // Return false if no data was fetched
+        }
+        data.furniture_infos.forEach(furnitureInfo => {
+            let card = createModelInfoCard(furnitureInfo);
+            container.appendChild(card);
+        });
+        skip += limit; // Increase skip for the next call
+        return true; // Return true if data was fetched and displayed
+    } catch (error) {
+        console.log('There was an error!', error);
+        return false; // Return false in case of an error
+    }
+}
+async function fillPage() {
+    // Fetch and display furniture info until the page height is greater than the viewport height
+    while (container.offsetHeight < window.innerHeight) {
+        const result = await fetchAndDisplayFurnitureInfo();
+        if (!result) {
+            break; // Break the loop if fetchAndDisplayFurnitureInfo returned false
+        }
+    }
+}
+
+fillPage();
+window.addEventListener('scroll', () => {
+    // Check if the scroll has reached near the bottom of the page
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+        // Fetch and display more furniture info
+        fetchAndDisplayFurnitureInfo();
+    }
+});
+    </script>
+</body>
+</html>

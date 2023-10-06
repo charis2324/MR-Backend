@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, constr
 
@@ -53,3 +54,21 @@ class UserCreate(BaseModel):
     password: constr(pattern="^[a-zA-Z0-9_]+$") = Field(
         ..., min_length=3, max_length=50
     )
+
+
+class FurnitureInfoBase(BaseModel):
+    uuid: str
+    name: str
+    user_uuid: str
+    username: Optional[str]
+    description: Optional[str]
+    scale_type: int
+    scale_x: Optional[float]
+    scale_y: Optional[float]
+    scale_z: Optional[float]
+    source: Optional[str]
+
+
+class FurnitureInfos(BaseModel):
+    furniture_infos: List[FurnitureInfoBase]
+    total_furniture_count: int

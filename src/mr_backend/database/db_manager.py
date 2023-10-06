@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from gzip import compress, decompress
 from io import BytesIO
+from typing import List, Optional, Tuple
 from uuid import uuid4
 
 from joblib import dump, load
@@ -17,7 +18,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import joinedload, relationship, sessionmaker
 from sqlalchemy.sql import func
 from trimesh import Trimesh
 
@@ -104,6 +105,30 @@ engine = create_engine("sqlite:///main_storage.db?check_same_thread=False", echo
 Base.metadata.create_all(engine)
 
 SessionLocal = sessionmaker(bind=engine)
+
+
+def get_models_info(skip: int, limit: int) -> Tuple[Optional[List[ModelInfo]], int]:
+    with SessionLocal() as db:
+        try:
+            total_rows = db.query(ModelInfo).count()
+            models = (
+                db.query(ModelInfo)
+                .options(joinedload(ModelInfo.user))
+                .offset(skip)
+                .limit(limit)
+                .all()
+            )
+            # Create a new list of dictionaries, each containing model information and the associated username
+            models_with_username = []
+            for model in models:
+                model_dict = model.__dict__
+                model_dict["username"] = model.user.username
+                models_with_username.append(model_dict)
+
+            return models_with_username, total_rows
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None, total_rows
 
 
 def create_model_info_from_task(task_id: str):
