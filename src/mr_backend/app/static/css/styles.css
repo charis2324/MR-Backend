@@ -248,10 +248,18 @@ button:hover {
     box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
 }
 
+.model-image {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
+}
+
 .model-info-card img {
-    width: 250px;
-    height: 250px;
-    max-height: 70%;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     /* Set max-height to limit the image size */
 }
 
