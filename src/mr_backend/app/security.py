@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any, Optional
 
 from jose import jwt
 from passlib.context import CryptContext
 
 SECRET_KEY = "10609d6b5687ba13ba254f64239e1c0421d29dbdf3523439ebb713d115fefcc3"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -19,10 +19,10 @@ def get_password_hash(password) -> str:
     return pwd_context.hash(password)
 
 
-def decode_access_token(token) -> Optional[str]:
+def decode_access_token(token) -> Optional[dict]:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
-        return payload.get("sub")
+        return payload
     except:
         return None
 

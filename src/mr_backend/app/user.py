@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from mr_backend.database.db_manager import create_user
 
@@ -19,3 +19,10 @@ def register(new_user: UserCreate):
         status_code=status.HTTP_200_OK,
         content={"message": "User registered successfully"},
     )
+
+
+@user_router.get("/logout")
+def logout():
+    response = RedirectResponse("/login")
+    response.delete_cookie("access_token")
+    return response
