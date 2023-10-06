@@ -42,6 +42,8 @@
     const cardWidth = 250;
     const cardHeight = 380;
     const container = document.querySelector('#model-info-card-container');
+    let loadMore = true;
+    let loading = false;
     let skip = 0;
     let limit = Math.floor(window.innerWidth / cardWidth);
         function createModelInfoCard(model) {
@@ -65,6 +67,7 @@
         }
         
         async function fetchImageAndUpdateCard(uuid, imgElement) {
+            
             let response = await fetch(`/tasks/${uuid}/preview`);
             let data = await response.blob();
             let imageUrl = URL.createObjectURL(data);
@@ -74,7 +77,9 @@
         function capitalizeFirstLetter(string) {
             return string.charAt(0).toUpperCase() + string.slice(1);
         }
+
         async function fetchFurnitureInfo() {
+            
             const response = await fetch(`/furnitures/info?skip=${skip}&limit=${limit}`);
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
@@ -86,17 +91,21 @@
 
 async function fetchAndDisplayFurnitureInfo(){
     try {
+        loading = true;
         const data = await fetchFurnitureInfo(skip, limit);
-        if (data.furniture_infos.length === 0) {
+        const infoLength = data.furniture_infos.length;
+        skip += infoLength;
+        if (infoLength === 0) {
             return false; // Return false if no data was fetched
         }
         data.furniture_infos.forEach(furnitureInfo => {
             let card = createModelInfoCard(furnitureInfo);
             container.appendChild(card);
         });
-        skip += limit; // Increase skip for the next call
+        loading = false;
         return true; // Return true if data was fetched and displayed
     } catch (error) {
+        loading = false;
         console.log('There was an error!', error);
         return false; // Return false in case of an error
     }
@@ -104,19 +113,19 @@ async function fetchAndDisplayFurnitureInfo(){
 async function fillPage() {
     // Fetch and display furniture info until the page height is greater than the viewport height
     while (container.offsetHeight < window.innerHeight) {
-        const result = await fetchAndDisplayFurnitureInfo();
-        if (!result) {
+        loadMore = await fetchAndDisplayFurnitureInfo();
+        if (!loadMore) {
             break; // Break the loop if fetchAndDisplayFurnitureInfo returned false
         }
     }
 }
 
 fillPage();
-window.addEventListener('scroll', () => {
+window.addEventListener('scroll', async () => {
     // Check if the scroll has reached near the bottom of the page
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && loadMore && !loading) {
         // Fetch and display more furniture info
-        fetchAndDisplayFurnitureInfo();
+        loadMore = await fetchAndDisplayFurnitureInfo();
     }
 });
     </script>

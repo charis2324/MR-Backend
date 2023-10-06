@@ -249,8 +249,8 @@ button:hover {
 }
 
 .model-info-card img {
-    width: 100%;
-    height: auto;
+    width: 250px;
+    height: 250px;
     max-height: 70%;
     /* Set max-height to limit the image size */
 }
