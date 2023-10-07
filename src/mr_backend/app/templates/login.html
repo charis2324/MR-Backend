@@ -50,7 +50,7 @@
         async function copyToClipboard(text) {
             try {
                 await navigator.clipboard.writeText(text);
-                showNotification("Text copied to clipboard.")
+                showNotification("Code copied to clipboard.")
             } catch (err) {
                 console.error('Failed to copy text: ', err);
             }
