@@ -13,6 +13,7 @@
 </head>
 
 <body>
+    <div id="notification">Notification message</div>
     <section>
         <h2>Login</h2>
         <form id="login-form">
@@ -37,7 +38,23 @@
         </div>
     </section>
     <script>
+        function showNotification(message, duration = 3000) {
+            const notification = document.getElementById('notification');
+            notification.innerText = message;
+            notification.style.display = 'block';
 
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, duration);
+        }
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showNotification("Text copied to clipboard.")
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+        }
         document.getElementById('login-form').addEventListener('submit', function (event) {
             event.preventDefault();
             var formData = new FormData(event.target);
@@ -76,6 +93,7 @@
                 document.getElementById("code-verify-button").style.display = "block";
                 document.getElementById("login-code-notice").style.color = "black";
                 document.getElementById("login-code-notice").innerText = "**Please verify the code on an existing session**";
+                copyToClipboard(result.login_code);
             }
 
             catch (error) {
@@ -111,6 +129,7 @@
                 document.getElementById("code-verify-button").style.display = "none";
             }
         })
+
     </script>
 </body>
 

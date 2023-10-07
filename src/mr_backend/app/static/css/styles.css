@@ -35,7 +35,7 @@ header img {
 
 .nav-item-box {
     margin-right: 20px;
-    width: 70px;
+    min-width: 70px;
     text-align: center;
     background-color: #fff;
     /* Light gray background */
@@ -290,4 +290,17 @@ button:hover {
     /* grid-template-columns: repeat(auto-fill, 290px); */
     gap: 20px;
     justify-items: start;
+}
+
+#notification {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px;
+    background-color: #444;
+    color: #fff;
+    text-align: center;
+    z-index: 1000;
 }

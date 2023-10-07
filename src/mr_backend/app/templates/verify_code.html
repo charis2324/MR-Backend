@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MR Backend</title>
+    <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='/favicon/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', path='/favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', path='/favicon/favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', path='/favicon/site.webmanifest') }}">
+</head>
+
+<body>
+    <header class="header">
+        <div class="logo">
+            <a class="home-anchor" href="/">
+                <h2>MR Backend</h2>
+            </a>
+        </div>
+        <div class="nav">
+            <a class="nav-item" href="/">
+                <div class="nav-item-box">
+                    <h4 class="nav-word">Generate</h4>
+                </div>
+            </a>
+            <a class="nav-item" href="/gallery">
+                <div class="nav-item-box">
+                    <h4 class="nav-word">Gallery</h4>
+                </div>
+            </a>
+            <a class="nav-item" href="/verify_code">
+                <div class="nav-item-box">
+                    <h4 class="nav-word">Verify Code</h4>
+                </div>
+            </a>
+        </div>
+        <div class="user-info">
+            <div class="user-name" id="userName">Welcome back! <b>{{username}}</b></div>
+            <a href="/logout" class="log-out-button">Log Out</a>
+        </div>
+    </header>
+</body>
+<section>
+    <div class="section-div">
+        <h2>Verify Login Code</h2>
+        <input type="text" id="login-code" placeholder="Enter your code"></input>
+        <button id="verify-button">Verify</button>
+        <strong>
+            <p id="verify-code-notice"></p>
+        </strong>
+    </div>
+</section>
+<script>
+    const loginCodeInput = document.getElementById("login-code");
+    const verifyButton = document.getElementById("verify-button");
+    const verifyCodeNotice = document.getElementById("verify-code-notice");
+    verifyButton.addEventListener('click', async () => {
+        try {
+            const response = await fetch('/login_code/verify', {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ login_code: loginCodeInput.value })
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                throw result;
+            }
+            verifyCodeNotice.style.color = "green";
+            verifyCodeNotice.innerText = `**Verification success!**`;
+        }
+        catch (error) {
+            console.error(`Failed to login with code: ${error}`);
+            verifyCodeNotice.style.color = "red";
+            verifyCodeNotice.innerText = `**Verification Failed!**`;
+        }
+
+    });
+</script>
+
+</html>

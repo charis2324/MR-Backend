@@ -96,3 +96,19 @@ async def read_items(
     if current_user_and_token["new_token"]:
         update_token_cookie(response, current_user_and_token["new_token"])
     return response
+
+
+@app.get("/verify_code", response_class=HTMLResponse)
+async def read_items(
+    request: Request,
+    current_user_and_token: Annotated[
+        UserInDB, Depends(get_current_user_update_token_or_redirect)
+    ],
+):
+    response = templates.TemplateResponse(
+        "verify_code.html",
+        {"request": request, "username": current_user_and_token["user"].username},
+    )
+    if current_user_and_token["new_token"]:
+        update_token_cookie(response, current_user_and_token["new_token"])
+    return response
