@@ -147,6 +147,21 @@ button:hover {
     background-color: #286090;
 }
 
+.section-div {
+    display: grid;
+    gap: 10px;
+}
+
+#code-verify-button {
+    display: none;
+    background-color: #5cb85c;
+}
+
+#code-verify-button:hover {
+
+    background-color: #449d44;
+}
+
 /* Styles for dynamically created elements */
 
 #response div,

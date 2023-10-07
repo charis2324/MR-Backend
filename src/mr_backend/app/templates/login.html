@@ -25,6 +25,17 @@
             <a href="/register">Don't have an account? Register here.</a>
         </form>
     </section>
+    <section>
+        <h2>Login with Code</h2>
+        <div class="section-div">
+            <input type="text" id="login-code"></input>
+            <button id="login-code-button">Get Login Code</button>
+            <button id="code-verify-button">Login with Code</button>
+            <strong>
+                <p id="login-code-notice">**Please verify the code on an existing session**</p>
+            </strong>
+        </div>
+    </section>
     <script>
 
         document.getElementById('login-form').addEventListener('submit', function (event) {
@@ -53,7 +64,53 @@
                     errorDiv.innerText = error.detail;
                 });
         });
+        document.getElementById("login-code-button").addEventListener('click', async () => {
+            try {
+                const response = await fetch('/login_code');
+                const result = await response.json();
+                if (!response.ok) {
+                    throw result;
+                }
+                document.getElementById("login-code").value = result.login_code;
+                document.getElementById("login-code-button").style.display = "none";
+                document.getElementById("code-verify-button").style.display = "block";
+                document.getElementById("login-code-notice").style.color = "black";
+                document.getElementById("login-code-notice").innerText = "**Please verify the code on an existing session**";
+            }
 
+            catch (error) {
+                console.error(`There was a problem fetching for login code: ${error.detail}`);
+                document.getElementById("login-code-notice").innerText = error.detail;
+                document.getElementById("login-code-notice").style.color = "red";
+                document.getElementById("login-code-button").style.display = "block";
+                document.getElementById("code-verify-button").style.display = "none";
+            }
+        })
+        document.getElementById("code-verify-button").addEventListener('click', async () => {
+            try {
+                const response = await fetch('/login_code/token', {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ login_code: document.getElementById("login-code").value })
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw result;
+                }
+                document.getElementById("login-code-notice").innerText = "**Login Success**";
+                document.getElementById("login-code-notice").style.color = "green";
+                setTimeout(function () {
+                    window.location = '/';
+                }, 1000);
+            }
+            catch (error) {
+                console.error(`Failed to login with code: ${error}`);
+                document.getElementById("login-code-notice").innerText = `**${error.detail}**`;
+                document.getElementById("login-code-notice").style.color = "red";
+                document.getElementById("login-code-button").style.display = "block";
+                document.getElementById("code-verify-button").style.display = "none";
+            }
+        })
     </script>
 </body>
 
