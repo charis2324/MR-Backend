@@ -4,14 +4,34 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from icecream import ic
 
-from mr_backend.database.db_manager import get_user_by_username
+from mr_backend.database.db_manager import (
+    add_login_code,
+    get_user_by_username,
+    get_username_if_active,
+    update_user_uuid_if_active_and_none,
+)
+from mr_backend.state import active_login_codes
 
-from .models import Token, UserInDB
+from .models import (
+    LoginCode,
+    LoginCodeResponse,
+    LoginCodeSuccessResponse,
+    Token,
+    UserInDB,
+)
 from .security import create_access_token, decode_access_token, verify_password
+from .utils import generate_random_string
+
+LOGIN_CODE_LENGTH = 6
+LOGIN_CODE_MAX_TRIES = 1000
+LOGIN_CODE_EXPIRATION_MINUTES = 6
 
 auth_router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+active_login_code = set()
 
 
 def is_authenticated_user(username, password) -> bool:
@@ -76,7 +96,7 @@ class UnauthorizedRedirectException(HTTPException):
     def __init__(self):
         super().__init__(
             status_code=401,
-            detail="Not authenticated",
+            detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -105,5 +125,62 @@ def login_for_access_token(
         )
     access_token = create_access_token(data={"sub": form_data.username})
     # Set the access token as a HTTPOnly cookie
+    update_token_cookie(response, access_token)
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@auth_router.get("/login_code", response_model=LoginCodeResponse)
+def get_login_code():
+    for _ in range(LOGIN_CODE_MAX_TRIES):
+        if (
+            login_code := generate_random_string(LOGIN_CODE_LENGTH)
+        ) not in active_login_code:
+            add_login_code(login_code, LOGIN_CODE_EXPIRATION_MINUTES)
+            return LoginCodeResponse(
+                login_code=login_code,
+                expiration_duration=timedelta(minutes=LOGIN_CODE_EXPIRATION_MINUTES),
+            )
+    raise HTTPException(
+        status_code=400,
+        detail="Failed to generate login code.",
+    )
+
+
+@auth_router.post("/login_code/verify", response_model=LoginCodeSuccessResponse)
+def submit_login_code(
+    current_user: Annotated[UserInDB, Depends(get_current_user)],
+    login_code_reponse: LoginCode,
+):
+    global active_login_codes
+    httpException = HTTPException(status_code=400, detail="Login code is not valid.")
+    login_code = login_code_reponse.login_code
+    if not active_login_codes.contains(login_code):
+        raise httpException
+
+    user_uuid = current_user.uuid
+    is_success = update_user_uuid_if_active_and_none(login_code, user_uuid)
+    if not is_success:
+        raise httpException
+    return LoginCodeSuccessResponse(
+        login_code=login_code,
+        user_uuid=user_uuid,
+        detail="Login code verification succeeded.",
+    )
+
+
+@auth_router.post("/login_code/token")
+def login_with_login_code_for_access_token(
+    response: Response, login_code_reponse: LoginCode
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate login code.",
+    )
+    login_code = login_code_reponse.login_code
+    username = get_username_if_active(login_code)
+    if username is None:
+        raise credentials_exception
+    print(f"Login as {username} from login code.")
+    access_token = create_access_token(data={"sub": username})
     update_token_cookie(response, access_token)
     return {"access_token": access_token, "token_type": "bearer"}

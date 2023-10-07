@@ -72,3 +72,16 @@ class FurnitureInfoBase(BaseModel):
 class FurnitureInfos(BaseModel):
     furniture_infos: List[FurnitureInfoBase]
     total_furniture_count: int
+
+
+class LoginCode(BaseModel):
+    login_code: str
+
+
+class LoginCodeResponse(LoginCode):
+    expiration_duration: timedelta
+
+
+class LoginCodeSuccessResponse(LoginCode):
+    user_uuid: str
+    detail: str

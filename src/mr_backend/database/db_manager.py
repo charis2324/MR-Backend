@@ -4,8 +4,10 @@ from io import BytesIO
 from typing import List, Optional, Tuple
 from uuid import uuid4
 
+from icecream import ic
 from joblib import dump, load
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     Enum,
@@ -15,6 +17,7 @@ from sqlalchemy import (
     LargeBinary,
     String,
     create_engine,
+    event,
 )
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.declarative import declarative_base
@@ -23,6 +26,9 @@ from sqlalchemy.sql import func
 from trimesh import Trimesh
 
 from mr_backend.app.models import TaskStatusEnum
+from mr_backend.state import active_login_codes
+
+from .db_scheduler import scheduler
 
 # Define the SQLAlchemy's Base model to maintain catalog of classes and tables
 Base = declarative_base()
@@ -92,19 +98,146 @@ class ModelInfo(Base):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = {"extend_existing": True}
     uuid = Column(String, primary_key=True)
     username = Column(String, unique=True)
     hashed_password = Column(String)
     created_at = Column(DateTime(timezone=False), default=datetime.now)
     model_infos = relationship("ModelInfo", back_populates="user")
     tasks = relationship("GenerationTask", back_populates="user")
+    login_codes = relationship("LoginCode", back_populates="user")
+
+
+class LoginCode(Base):
+    __tablename__ = "login_code"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    code = Column(String, index=True)
+    user_uuid = Column(String, ForeignKey("users.uuid"), index=True)
+    created_at = Column(DateTime(timezone=False))
+    expire_at = Column(DateTime(timezone=False))
+    is_active = Column(Boolean)
+    user = relationship("User", back_populates="login_codes")
 
 
 # Initialize the database
 engine = create_engine("sqlite:///main_storage.db?check_same_thread=False", echo=False)
 Base.metadata.create_all(engine)
 
+
 SessionLocal = sessionmaker(bind=engine)
+
+
+def get_all_active_login_codes_set(_):
+    global active_login_codes
+    print("Getting all active code.")
+    db = SessionLocal()
+    active_codes = db.query(LoginCode).filter(LoginCode.is_active == True).all()
+    db.close()
+    active_login_codes.replace({code.code for code in active_codes})
+    ic(active_login_codes)
+
+
+def check_and_schedule_codes(session):
+    # Query active LoginCode instances
+    active_codes = session.query(LoginCode).filter(LoginCode.is_active == True).all()
+
+    for login_code in active_codes:
+        if datetime.now() >= login_code.expire_at:
+            # If the code is expired, update is_active to False
+            login_code.is_active = False
+        else:
+            # If the code is not expired, schedule a job to deactivate it at expire_at
+            scheduler.add_job(
+                deactivate_code,
+                "date",
+                run_date=login_code.expire_at,
+                args=[login_code.id],
+            )
+
+    # Commit any changes made during the session
+    session.commit()
+
+
+event.listen(SessionLocal, "after_commit", get_all_active_login_codes_set)
+
+
+def get_username_if_active(code: str):
+    db = SessionLocal()
+
+    # Query the database for the LoginCode record with the given code
+    login_code = db.query(LoginCode).join(User).filter(LoginCode.code == code).first()
+
+    if login_code and login_code.is_active:
+        # If the LoginCode record exists and is_active is True, store user.username
+        username = login_code.user.username
+    else:
+        # If the LoginCode record does not exist or is not active, store None
+        username = None
+    db.close()
+
+    return username
+
+
+def update_user_uuid_if_active_and_none(code: str, new_user_uuid: str) -> bool:
+    db = SessionLocal()
+
+    # Query the database for the LoginCode record with the given code
+    login_code = db.query(LoginCode).filter(LoginCode.code == code).first()
+
+    if login_code and login_code.is_active and login_code.user_uuid is None:
+        # If the LoginCode record exists, is_active is True, and user_uuid is None
+        # Update user_uuid
+        login_code.user_uuid = new_user_uuid
+        db.commit()
+        db.close()
+        return True
+    db.close()
+    return False
+
+
+def add_login_code(login_code: str, expire_duration_in_minutes: int):
+    db = SessionLocal()
+    try:
+        expire_at = datetime.now() + timedelta(minutes=expire_duration_in_minutes)
+        new_login_code = LoginCode(
+            code=login_code,
+            created_at=datetime.now(),
+            expire_at=expire_at,
+            is_active=True,
+        )
+        db.add(new_login_code)
+        db.commit()
+        generated_id = new_login_code.id
+        # tell the scheduler to deactivate the code.
+        scheduler.add_job(
+            deactivate_code, "date", run_date=expire_at, args=[generated_id]
+        )
+    except:
+        generated_id = None
+        print("Failed to add login code.")
+    finally:
+        db.close()
+    return generated_id
+
+
+def deactivate_code(login_code_id: int):
+    db = SessionLocal()
+    login_code = db.query(LoginCode).get(login_code_id)
+    if login_code:
+        login_code.is_active = False
+        db.commit()
+    db.close()
+
+
+def db_startup():
+    # Run it once at start.
+    session = SessionLocal()
+    check_and_schedule_codes(session)
+    session.close()
+
+
+# Run it once at start.
+db_startup()
 
 
 def get_models_info(skip: int, limit: int) -> Tuple[Optional[List[ModelInfo]], int]:
