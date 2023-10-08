@@ -264,6 +264,37 @@ def get_models_info(skip: int, limit: int) -> Tuple[Optional[List[ModelInfo]], i
             return None, total_rows
 
 
+def create_model_info(
+    uuid: str,
+    user_uuid: str,
+    source: str,
+    name: str = "",
+    description: str = "",
+    scale_type: int = 1,
+    scale_x: float = 1.0,
+    scale_y: float = 1.0,
+    scale_z: float = 1.0,
+):
+    db = SessionLocal()
+    new_model_info = ModelInfo(
+        uuid=uuid,
+        name=name,
+        user_uuid=user_uuid,
+        description=description,
+        scale_type=scale_type,
+        scale_x=scale_x,
+        scale_y=scale_y,
+        scale_z=scale_z,
+        source=source,
+    )
+
+    db.add(new_model_info)
+    db.commit()
+    db.refresh(new_model_info)
+    db.close()
+    return new_model_info
+
+
 def create_model_info_from_task(task_id: str):
     db = SessionLocal()
     # Retrieve the task

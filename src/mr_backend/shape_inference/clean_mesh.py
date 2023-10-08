@@ -1,6 +1,23 @@
+import math
+
 import numpy as np
 import trimesh
 
+
+def rotate_mesh(mesh, angle_degrees, direction, center):
+    angle_radians = math.radians(angle_degrees)
+    rot_matrix = trimesh.transformations.rotation_matrix(
+        angle_radians, direction, center
+    )
+
+    mesh.apply_transform(rot_matrix)
+    return mesh
+
+def rotate_all_geometries(scene, angle_degrees=90, direction=[1, 0, 0], center=[0, 0, 0]):
+    """Rotate all geometries in a Scene object."""
+    for name, geometry in scene.geometry.items():
+        # Apply the rotation to each Trimesh object
+        scene.geometry[name] = rotate_mesh(geometry, angle_degrees, direction, center)
 
 def split_model_output(image):
     verts = image.verts.detach().cpu().numpy()
