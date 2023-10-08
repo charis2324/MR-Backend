@@ -59,3 +59,44 @@ def map_nearest_color_vertices(decimated_mesh, original_mesh):
 def decimate_mesh(mesh, ratio=0.1):
     target_face_count = int(len(mesh.faces) * ratio)
     return mesh.simplify_quadric_decimation(target_face_count)
+
+
+def merge_geometry(scene):
+    # Iterate over the geometry items in the scene
+    for name, geometry in scene.geometry.items():
+        # Try to check if vertex colors are defined
+        try:
+            if geometry.visual.vertex_colors is not None:
+                print("Vertex colors are defined.")
+                rgb_vertex_colors = geometry.visual.vertex_colors[:, :3]
+                geometry.visual = trimesh.visual.ColorVisuals(
+                    mesh=geometry, vertex_colors=rgb_vertex_colors
+                )
+                continue  # Skip to the next iteration if vertex colors are defined
+
+        # If an AttributeError occurs, print a message and continue to the next block
+        except AttributeError:
+            print("Vertex colors are not defined.")
+
+        # Try to check if material is defined
+        try:
+            material = geometry.visual.material
+            print("Material is defined.")
+            if isinstance(material, trimesh.visual.material.SimpleMaterial):
+                material = material.to_pbr()
+            if material.baseColorFactor is not None:
+                color = material.baseColorFactor
+            else:
+                color = material.main_color
+            vertex_colors = np.tile(color[0:3], (len(geometry.vertices), 1))
+            geometry.visual = trimesh.visual.ColorVisuals(
+                mesh=geometry, vertex_colors=vertex_colors
+            )
+
+        # If an AttributeError occurs, print a message
+        except AttributeError:
+            print("Material is not defined.")
+
+    # Merge all the geometry items and return the merged geometry
+    merged_mesh = trimesh.util.concatenate(scene.geometry.values())
+    return merged_mesh
