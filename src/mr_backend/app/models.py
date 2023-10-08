@@ -85,3 +85,12 @@ class LoginCodeResponse(LoginCode):
 class LoginCodeSuccessResponse(LoginCode):
     user_uuid: str
     detail: str
+
+
+class ModelInfoUpdate(BaseModel):
+    name: str
+    description: str
+    scale_type: int
+    scale_x: float
+    scale_y: float
+    scale_z: float

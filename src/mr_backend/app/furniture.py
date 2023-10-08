@@ -15,8 +15,10 @@ from mr_backend.app.auth import get_current_user
 from mr_backend.database.db_manager import (
     create_model_info,
     create_model_preview,
+    get_model_info_by_uuid,
     get_models_info,
     store_trimesh,
+    update_model_info_by_uuid,
 )
 from mr_backend.model_preview.offscreen_renderer import render_preview
 from mr_backend.shape_inference.clean_mesh import (
@@ -25,7 +27,7 @@ from mr_backend.shape_inference.clean_mesh import (
     rotate_mesh,
 )
 
-from .models import FurnitureInfoBase, FurnitureInfos, UserInDB
+from .models import FurnitureInfoBase, FurnitureInfos, ModelInfoUpdate, UserInDB
 
 furniture_router = APIRouter()
 
@@ -78,3 +80,41 @@ async def upload_furniture(
         except Exception:
             httpExecption.detail = "Model parsing failed."
             raise httpExecption
+
+
+@furniture_router.get("/furnitures/{uuid}")
+def read_furnitures_info_by_uuid(uuid: str):
+    model_info = get_model_info_by_uuid(uuid)
+    if model_info is None:
+        raise HTTPException(status_code=404, detail="Furniture not found")
+    furniture_info_dict = model_info.__dict__
+    furniture_info_dict["username"] = ""
+    furniture_info_dict.pop("_sa_instance_state", None)
+    return FurnitureInfoBase(**furniture_info_dict)
+
+
+@furniture_router.put("/model_info/{uuid}")
+def update_model_info(
+    current_user: Annotated[UserInDB, Depends(get_current_user)],
+    uuid: str,
+    update_data: ModelInfoUpdate,
+):
+    user_uuid = current_user.uuid
+    is_success = update_model_info_by_uuid(
+        uuid,
+        user_uuid,
+        update_data.name,
+        update_data.description,
+        update_data.scale_type,
+        update_data.scale_x,
+        update_data.scale_y,
+        update_data.scale_z,
+    )
+    if not is_success:
+        raise HTTPException(status_code=400, detail="Failed to update furniture info")
+    new_model_info = get_model_info_by_uuid(uuid)
+    furniture_info_dict = new_model_info.__dict__
+    furniture_info_dict["username"] = ""
+    print(furniture_info_dict)
+    furniture_info_dict.pop("_sa_instance_state", None)
+    return FurnitureInfoBase(**furniture_info_dict)

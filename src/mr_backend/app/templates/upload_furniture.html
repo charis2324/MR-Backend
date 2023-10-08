@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MR Backend</title>
+    <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='/favicon/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', path='/favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', path='/favicon/favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', path='/favicon/site.webmanifest') }}">
+</head>
+
+<body>
+    <header class="header">
+        <div class="logo">
+            <a class="home-anchor" href="/">
+                <h2>MR Backend</h2>
+            </a>
+        </div>
+        <div class="nav">
+            <a class="nav-item" href="/">
+                <div class="nav-item-box">
+                    <h4 class="nav-word">Generate</h4>
+                </div>
+            </a>
+            <a class="nav-item" href="/gallery">
+                <div class="nav-item-box">
+                    <h4 class="nav-word">Gallery</h4>
+                </div>
+            </a>
+            <a class="nav-item" href="/verify_code">
+                <div class="nav-item-box">
+                    <h4 class="nav-word">Verify Code</h4>
+                </div>
+            </a>
+            <a class="nav-item" href="/upload_furniture">
+                <div class="nav-item-box">
+                    <h4 class="nav-word">Upload Furniture</h4>
+                </div>
+            </a>
+        </div>
+        <div class="user-info">
+            <div class="user-name" id="userName">Welcome back! <b>{{username}}</b></div>
+            <a href="/logout" class="log-out-button">Log Out</a>
+        </div>
+    </header>
+</body>
+<section id="upload-section">
+    <h2>Upload Furniture</h2>
+    <form id="upload-form">
+        <input type="file" id="files" name="files" multiple accept=".obj,.mtl">
+        <ul id="file-list"></ul>
+        <button type="submit">Upload</button>
+        <button type="button" id="clear-files">Clear Files</button>
+    </form>
+</section>
+<section id="info-section">
+    <h2>Furniture Info</h2>
+    <div class="upload-preview">
+        <img id="preview"></img>
+    </div>
+    <form id="update-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name">
+
+        <label for="description">Description:</label>
+        <textarea id="description" name="description"></textarea>
+
+        <label for="scale_type">Scale Type:</label>
+        <input type="number" id="scale_type" name="scale_type" min="1" max="3" value="1">
+        <label for="scale_x">Scale X:</label>
+        <input type="number" id="scale_x" name="scale_x" step="0.01" min="0.01" value="1">
+
+        <label for="scale_y">Scale Y:</label>
+        <input type="number" id="scale_y" name="scale_y" step="0.01" min="0.01" value="1">
+
+        <label for="scale_z">Scale Z:</label>
+        <input type="number" id="scale_z" name="scale_z" step="0.01" min="0.01" value="1">
+
+        <button type="submit">Update Info</button>
+    </form>
+</section>
+<script>
+    const updateForm = document.getElementById('update-form');
+    const filesInput = document.getElementById('files');
+    const fileList = document.getElementById('file-list');
+    const clearFilesButton = document.getElementById('clear-files');
+    const uploadSection = document.getElementById('upload-section');
+    const infoSection = document.getElementById('info-section');
+    const preview = document.getElementById('preview'); preview
+    let modelInfo;
+    let isImageFetched = false;
+    // Create an array to store the files
+    let filesArray = [];
+
+    infoSection.style.display = "none";
+    // Update the displayed file list
+    function updateFileList() {
+        // Clear the current list
+        fileList.innerHTML = '';
+
+        // Add a list item for each file in the array
+        filesArray.forEach((file, index) => {
+            const listItem = document.createElement('li');
+            listItem.textContent = file.name;
+            fileList.appendChild(listItem);
+        });
+    }
+    function fillFormWithModelInfo(modelInfo) {
+        document.getElementById('name').value = modelInfo.name;
+        document.getElementById('description').value = modelInfo.description || '';
+        document.getElementById('scale_type').value = modelInfo.scale_type;
+        document.getElementById('scale_x').value = modelInfo.scale_x || 1;
+        document.getElementById('scale_y').value = modelInfo.scale_y || 1;
+        document.getElementById('scale_z').value = modelInfo.scale_z || 1;
+    }
+    async function fetchPreview(task_id, retries = 10, retryInterval = 1000) {
+        if (isImageFetched) return;
+
+        try {
+            const response = await fetch(`/tasks/${task_id}/preview`);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const blob = await response.blob();
+            var url = URL.createObjectURL(blob);
+
+            preview.src = url;
+            preview.style.maxWidth = '100%'; // To ensure the image fits in the container
+            isImageFetched = true;
+        } catch (error) {
+            if (retries > 0) {
+                console.log(`Fetch failed, retrying in ${retryInterval}ms...`);
+                setTimeout(() => fetchPreview(task_id, retries - 1, retryInterval), retryInterval);
+            } else {
+                console.error('Error:', error);
+            }
+        }
+    }
+    filesInput.addEventListener('change', () => {
+        // Add the newly selected files to the array
+        for (let i = 0; i < filesInput.files.length; i++) {
+            filesArray.push(filesInput.files[i]);
+        }
+
+        // Update the displayed file list
+        updateFileList();
+    });
+
+    clearFilesButton.addEventListener('click', (e) => {
+        e.preventDefault(); // Prevent the default button action
+
+        // Clear the files array
+        filesArray = [];
+        filesInput.value = '';
+
+        // Update the displayed file list
+        updateFileList();
+    });
+
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData();
+
+        // Append all files in the array to the FormData object
+        filesArray.forEach((file, index) => {
+            formData.append('files', file);
+        });
+
+        const response = await fetch('/furnitures/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            modelInfo = await response.json();
+            fillFormWithModelInfo(modelInfo);
+            infoSection.style.display = "block";
+            uploadSection.style.display = "none";
+            fetchPreview(modelInfo.uuid)
+        } else {
+            const errorData = await response.json();
+            alert('Upload failed: ' + errorData.detail);
+        }
+    });
+    updateForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        // Get form data
+        const formData = new FormData(updateForm);
+
+        // Convert form data to JSON
+        const jsonData = {};
+        for (let [key, value] of formData.entries()) {
+            jsonData[key] = value;
+        }
+
+        // Get UUID
+        const uuid = modelInfo.uuid;
+
+        // Call API
+        fetch(`/model_info/${uuid}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                // Include your authentication headers like tokens etc. here
+            },
+            body: JSON.stringify(jsonData),
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Handle the response data here
+                console.log(data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+    });
+
+</script>
+
+</html>

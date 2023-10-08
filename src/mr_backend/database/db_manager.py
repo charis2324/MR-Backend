@@ -240,6 +240,53 @@ def db_startup():
 db_startup()
 
 
+def update_model_info_by_uuid(
+    uuid: str,
+    user_uuid: str,
+    name: str,
+    description: str,
+    scale_type: int,
+    scale_x: float,
+    scale_y: float,
+    scale_z: float,
+):
+    db = SessionLocal()
+    try:
+        model_info = db.query(ModelInfo).filter(ModelInfo.uuid == uuid).one()
+
+        if model_info.user_uuid != user_uuid:
+            db.close()
+            print("Provided user_uuid does not match the ModelInfo entry's user_uuid")
+            return False
+
+        model_info.name = name
+        model_info.description = description
+        model_info.scale_type = scale_type
+        model_info.scale_x = scale_x
+        model_info.scale_y = scale_y
+        model_info.scale_z = scale_z
+        db.commit()
+        db.close()
+        print("ModelInfo updated successfully.")
+        return True
+    except NoResultFound:
+        print(f"No ModelInfo found with uuid: {uuid}")
+        db.close()
+        return False
+
+
+def get_model_info_by_uuid(uuid: str) -> ModelInfo | None:
+    db = SessionLocal()
+    try:
+        model_info = db.query(ModelInfo).filter(ModelInfo.uuid == uuid).one()
+
+    except NoResultFound:
+        print(f"No ModelInfo found with uuid: {uuid}")
+        model_info = None
+    db.close()
+    return model_info
+
+
 def get_models_info(skip: int, limit: int) -> Tuple[Optional[List[ModelInfo]], int]:
     with SessionLocal() as db:
         try:
