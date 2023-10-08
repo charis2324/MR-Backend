@@ -22,6 +22,7 @@ from mr_backend.database.db_manager import (
     get_trimesh,
     get_waiting_tasks_count,
 )
+from mr_backend.shape_inference.clean_mesh import merge_geometry
 from mr_backend.shape_inference.inference_server import export_trimesh_to_obj_str
 
 from ..state import inference_thread_busy
@@ -87,36 +88,18 @@ def read_task_status(task_id: str):
 
 @task_router.get("/tasks/{task_id}/result")
 def get_task_results(task_id: str):
-    start = time()
     status = get_task_status(task_id)
     if status == TaskStatusEnum.completed:
-        trimesh = get_trimesh(task_id)
-        with TemporaryDirectory() as temp_dir:
-            obj_path = os.path.join(temp_dir, f"{task_id}.obj")
-            if not hasattr(
-                trimesh.visual, "vertex_colors"
-            ):  # This line doesn't looks right?? sus
-                print("I don't have vertex_colors!")
-                trimesh.export(obj_path, return_texture=True)
-                # export_obj(trimesh, return_texture=True)
-            else:
-                print("I have vertex_colors!")
-                obj_str = export_trimesh_to_obj_str(trimesh)
-                with open(obj_path, "w") as f:
-                    f.write(obj_str)
-            with TemporaryDirectory() as zip_dir:
-                zip_path = os.path.join(zip_dir, f"{task_id}.zip")
-                with ZipFile(zip_path, "w") as zipf:
-                    for filename in os.listdir(temp_dir):
-                        file_path = os.path.join(temp_dir, filename)
-                        if os.path.isfile(file_path):
-                            zipf.write(file_path, arcname=filename)
-                with open(zip_path, "rb") as f:
-                    zip_bytes = f.read()
-        print(f"time: {time()-start}")
+        # it is actually a Scene
+        trimesh = merge_geometry(get_trimesh(task_id))
+        obj_str = export_trimesh_to_obj_str(trimesh)
+        obj_bytes = BytesIO(obj_str.encode())
         return StreamingResponse(
-            BytesIO(zip_bytes),
-            media_type="application/zip",
+            obj_bytes,
+            media_type="application/obj",
+            headers={
+                "Content-Disposition": f"attachment; filename={task_id}.obj",
+            },
         )
     else:
         raise HTTPException(

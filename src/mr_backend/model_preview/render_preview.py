@@ -12,6 +12,7 @@ from mr_backend.database.db_manager import (
     update_model_preview_status,
 )
 from mr_backend.model_preview.offscreen_renderer import render_preview
+from mr_backend.shape_inference.clean_mesh import merge_geometry
 
 
 def parse_lines(lines):
@@ -68,7 +69,8 @@ def preview_generation_thread():
         if uuid is not None:
             update_model_preview_status(uuid, TaskStatusEnum.processing)
             try:
-                trimesh = get_trimesh(uuid)
+                # need to merge the meshes from scene.
+                trimesh = merge_geometry(get_trimesh(uuid))
                 frame_images = render_preview(trimesh)
                 output = io.BytesIO()
                 imageio.mimsave(output, frame_images, format="GIF", duration=33, loop=0)
