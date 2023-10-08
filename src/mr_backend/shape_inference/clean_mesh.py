@@ -11,6 +11,7 @@ def split_model_output(image):
     return verts, faces, vertex_colors
 
 
+# From now on we represent meshes in Scene.
 def clean_mesh(verts, faces, vertex_colors):
     colors_uint8 = (vertex_colors * 255).astype(np.uint8)
     mesh = trimesh.Trimesh(
@@ -34,7 +35,7 @@ def clean_mesh(verts, faces, vertex_colors):
     decimated_mesh = decimate_mesh(mesh)
     print(f"Decimated mesh: {decimated_mesh}")
     map_nearest_color_vertices(decimated_mesh, mesh)
-    return decimated_mesh
+    return trimesh.Scene(decimated_mesh)
 
 
 def remove_isolated(mesh):
