@@ -15,6 +15,7 @@ from mr_backend.app.auth import get_current_user
 from mr_backend.database.db_manager import (
     create_model_info,
     create_model_preview,
+    get_model_info_by_user,
     get_model_info_by_uuid,
     get_models_info,
     store_trimesh,
@@ -118,3 +119,15 @@ def update_model_info(
     print(furniture_info_dict)
     furniture_info_dict.pop("_sa_instance_state", None)
     return FurnitureInfoBase(**furniture_info_dict)
+
+
+@furniture_router.get("/users/{user_uuid}/model_info")
+def read_user_model_info(user_uuid: str):
+    user_model_info = get_model_info_by_user(user_uuid)
+    model_info_bases = [
+        FurnitureInfoBase(**{**info.__dict__, "username": ""})
+        for info in user_model_info
+    ]
+    return FurnitureInfos(
+        furniture_infos=model_info_bases, total_furniture_count=len(model_info_bases)
+    )

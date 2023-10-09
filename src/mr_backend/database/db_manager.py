@@ -161,6 +161,13 @@ def check_and_schedule_codes(session):
 event.listen(SessionLocal, "after_commit", get_all_active_login_codes_set)
 
 
+def get_model_info_by_user(user_uuid: str) -> List[ModelInfo]:
+    db = SessionLocal()
+    model_info = db.query(ModelInfo).filter(ModelInfo.user_uuid == user_uuid).all()
+    db.close()
+    return model_info
+
+
 def get_username_if_active(code: str):
     db = SessionLocal()
 
@@ -265,6 +272,7 @@ def update_model_info_by_uuid(
         model_info.scale_x = scale_x
         model_info.scale_y = scale_y
         model_info.scale_z = scale_z
+        # For some reason returning model_info is a empty object don't know why.
         db.commit()
         db.close()
         print("ModelInfo updated successfully.")
