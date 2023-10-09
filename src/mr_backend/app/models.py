@@ -42,6 +42,12 @@ class UserInDB(BaseModel):
     created_at: datetime
 
 
+class UserInfoResponse(BaseModel):
+    uuid: str
+    username: str
+    created_at: datetime
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str

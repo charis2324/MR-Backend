@@ -571,11 +571,15 @@ def store_trimesh(uuid: str, trimesh: Trimesh):
     db.close()
 
 
-def get_trimesh(uuid: str) -> Trimesh:
+def get_trimesh(uuid: str) -> Trimesh | None:
     db = SessionLocal()
-    dump_buffer = db.query(ModelObj.trimesh).filter(ModelObj.uuid == uuid).one()[0]
-    db.close()
-    return load(BytesIO(dump_buffer))
+    try:
+        dump_buffer = db.query(ModelObj.trimesh).filter(ModelObj.uuid == uuid).one()[0]
+        return load(BytesIO(dump_buffer))
+    except:
+        return None
+    finally:
+        db.close()
 
 
 def create_model_preview(uuid: str):

@@ -4,7 +4,7 @@ from gzip import decompress
 from io import BytesIO
 from tempfile import TemporaryDirectory
 from time import time
-from typing import Annotated
+from typing import Annotated, Optional
 from uuid import uuid4
 from zipfile import ZipFile
 
@@ -34,7 +34,7 @@ from .models import (
     TaskStatusEnum,
     UserInDB,
 )
-from .utils import get_duration_estimation
+from .utils import extract_frame_from_bytes, get_duration_estimation
 
 task_router = APIRouter()
 
@@ -136,11 +136,20 @@ def read_task_preview_status(task_id: str):
 
 
 @task_router.get("/tasks/{task_id}/preview")
-def get_task_results(task_id: str):
+def get_task_results(task_id: str, return_png: Optional[bool] = None):
     status = get_preview_status(task_id)
     if status == TaskStatusEnum.completed:
         compress_preview, file_type = get_preview(task_id)
         decompress_preview = decompress(compress_preview)
+        if return_png:
+            try:
+                decompress_preview = extract_frame_from_bytes(decompress_preview, 0)
+                file_type = "png"
+            except:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Failed to convert preview to PNG.",
+                )
         return Response(content=decompress_preview, media_type=f"image/{file_type}")
     else:
         raise HTTPException(

@@ -18,6 +18,7 @@ from mr_backend.database.db_manager import (
     get_model_info_by_user,
     get_model_info_by_uuid,
     get_models_info,
+    get_trimesh,
     store_trimesh,
     update_model_info_by_uuid,
 )
@@ -27,6 +28,7 @@ from mr_backend.shape_inference.clean_mesh import (
     rotate_all_geometries,
     rotate_mesh,
 )
+from mr_backend.shape_inference.inference_server import export_trimesh_to_obj_str
 
 from .models import FurnitureInfoBase, FurnitureInfos, ModelInfoUpdate, UserInDB
 
@@ -83,7 +85,7 @@ async def upload_furniture(
             raise httpExecption
 
 
-@furniture_router.get("/furnitures/{uuid}")
+@furniture_router.get("/model_info/{uuid}")
 def read_furnitures_info_by_uuid(uuid: str):
     model_info = get_model_info_by_uuid(uuid)
     if model_info is None:
@@ -130,4 +132,26 @@ def read_user_model_info(user_uuid: str):
     ]
     return FurnitureInfos(
         furniture_infos=model_info_bases, total_furniture_count=len(model_info_bases)
+    )
+
+
+@furniture_router.get("/furnitures/{uuid}")
+def get_task_results(uuid: str):
+    print(f"/furnitures/{uuid}")
+    # it is actually a Scene
+    scene = get_trimesh(uuid)
+    if scene is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Furnture model not found.",
+        )
+    trimesh = merge_geometry(scene)
+    obj_str = export_trimesh_to_obj_str(trimesh)
+    obj_bytes = io.BytesIO(obj_str.encode())
+    return StreamingResponse(
+        obj_bytes,
+        media_type="application/obj",
+        headers={
+            "Content-Disposition": f"attachment; filename={uuid}.obj",
+        },
     )

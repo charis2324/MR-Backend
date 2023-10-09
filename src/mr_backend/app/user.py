@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse, RedirectResponse
 
+from mr_backend.app.auth import get_current_user
 from mr_backend.database.db_manager import create_user
 
-from .models import UserCreate
+from .models import UserCreate, UserInDB, UserInfoResponse
 from .security import get_password_hash
 
 user_router = APIRouter()
@@ -26,3 +29,14 @@ def logout():
     response = RedirectResponse("/login")
     response.delete_cookie("access_token")
     return response
+
+
+@user_router.get("/user-info", response_model=UserInfoResponse)
+def get_self_info(
+    current_user: Annotated[UserInDB, Depends(get_current_user)],
+):
+    return UserInfoResponse(
+        uuid=current_user.uuid,
+        username=current_user.username,
+        created_at=current_user.created_at,
+    )

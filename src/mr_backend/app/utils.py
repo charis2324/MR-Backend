@@ -1,5 +1,8 @@
+import io
 import random
 import string
+
+from PIL import Image
 
 
 def get_duration_estimation(
@@ -27,3 +30,18 @@ def generate_random_string(length):
     random_string = "".join(random.choice(characters) for i in range(length))
 
     return random_string
+
+
+def extract_frame_from_bytes(gif_bytes, frame_index):
+    gif_file = io.BytesIO(gif_bytes)
+    frame = Image.open(gif_file)
+    try:
+        frame.seek(frame_index)
+    except EOFError:
+        raise ValueError(f"Frame {frame_index} not found")
+
+    # Create a BytesIO object, save the PNG in it, get the byte array from it
+    png_bytes = io.BytesIO()
+    frame.save(png_bytes, "PNG")
+    png_bytes.seek(0)
+    return png_bytes.read()
