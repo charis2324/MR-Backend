@@ -17,13 +17,13 @@
 
 <body>
     <header class="header-bar">
-        <p class="greeting">Welcome, <span class="username">User</span>!</p>
+        <p class="greeting">Welcome, <span class="username">{{username}}</span></p>
         <button class="logout-button">Logout</button>
     </header>
     <nav class="navbar">
         <ul class="navbar-nav">
             <li class="logo">
-                <a href="#" class="nav-link">
+                <a href="/" class="nav-link">
                     <svg xmlns="http://www.w3.org/2000/svg" height="1em"
                         viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
                         <path fill="currentColor" class="fa-primary"
@@ -33,7 +33,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="/generate" class="nav-link">
                     <svg xmlns="http://www.w3.org/2000/svg" height="1em"
                         viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
                         <path fill="currentColor" class="fa-primary"
@@ -43,7 +43,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="/gallery" class="nav-link">
                     <svg xmlns="http://www.w3.org/2000/svg" height="1em"
                         viewBox="0 0 576 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
                         <path fill="currentColor" class="fa-primary"
@@ -54,7 +54,7 @@
 
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="/verify_code" class="nav-link">
                     <svg xmlns="http://www.w3.org/2000/svg" height="1em"
                         viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
                         <path fill="currentColor" class="fa-primary"
@@ -65,7 +65,7 @@
 
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="/upload_furniture" class="nav-link">
                     <svg xmlns="http://www.w3.org/2000/svg" height="1em"
                         viewBox="0 0 640 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
                         <path fill="currentColor" class="fa-primary"
@@ -84,7 +84,7 @@
                     </svg>
                     <div class="greeting-box">
                         <p><strong>Welcome Back</strong></p>
-                        <p>John</p>
+                        <p>{{username}}</p>
                     </div>
                 </a>
             </li>
