@@ -76,7 +76,7 @@ header img {
     margin: auto;
 }
 
-@media screen and (max-width: 850px) {
+@media screen and (max-width: 1010px) {
     header {
         flex-direction: column;
         height: auto;
