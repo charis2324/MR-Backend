@@ -128,3 +128,8 @@ async def read_items(
     if current_user_and_token["new_token"]:
         update_token_cookie(response, current_user_and_token["new_token"])
     return response
+
+
+@app.get("/_test", response_class=HTMLResponse)
+async def read_items(request: Request):
+    return templates.TemplateResponse("_test.html", {"request": request})
