@@ -71,7 +71,7 @@
         document.getElementById('scale_y').value = modelInfo.scale_y || 1;
         document.getElementById('scale_z').value = modelInfo.scale_z || 1;
     }
-    async function fetchPreview(task_id, retries = 10, retryInterval = 1000) {
+    async function fetchPreview(uuid, retries = 10, retryInterval = 1000) {
         if (isImageFetched) return;
 
         try {
@@ -88,7 +88,7 @@
         } catch (error) {
             if (retries > 0) {
                 console.log(`Fetch failed, retrying in ${retryInterval}ms...`);
-                setTimeout(() => fetchPreview(task_id, retries - 1, retryInterval), retryInterval);
+                setTimeout(() => fetchPreview(uuid, retries - 1, retryInterval), retryInterval);
             } else {
                 console.error('Error:', error);
             }
