@@ -43,6 +43,7 @@ main {
     position: fixed;
     background-color: var(--bg-primary);
     transition: width var(--transition-speed) ease;
+    z-index: 9999;
 }
 
 .navbar-nav {
@@ -190,6 +191,7 @@ main {
     align-items: center;
     padding: 0 1rem;
     box-sizing: border-box;
+    z-index: 9999;
 }
 
 .greeting {
@@ -252,4 +254,59 @@ button:hover {
 .section-div {
     display: grid;
     gap: 10px;
+}
+
+/* ///////////////////////////////////////////////////////////////// */
+
+
+#model-info-card-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    /* grid-template-columns: repeat(auto-fill, 290px); */
+    gap: 20px;
+    justify-items: start;
+}
+
+.model-info-card {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    margin: auto;
+    width: 250px;
+    /* Increase the width of card */
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    transition: 0.3s;
+    background-color: #fff;
+}
+
+.model-info-card:hover {
+    box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+}
+
+.model-image {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
+}
+
+.upload-preview {
+    position: relative;
+    width: 400px;
+    height: 0;
+    padding-bottom: 400px;
+}
+
+.model-info-card img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Set max-height to limit the image size */
+}
+
+.model-info-card .model-details {
+    padding: 10px;
+    font-size: 0.8em;
+    /* Decrease the font size */
 }
