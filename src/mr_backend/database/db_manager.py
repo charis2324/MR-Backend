@@ -26,7 +26,6 @@ from sqlalchemy.sql import func
 from trimesh import Trimesh
 
 from mr_backend.app.models import TaskStatusEnum
-from mr_backend.state import active_login_codes
 
 from .db_scheduler import scheduler
 
@@ -127,16 +126,6 @@ Base.metadata.create_all(engine)
 SessionLocal = sessionmaker(bind=engine)
 
 
-def get_all_active_login_codes_set(_):
-    global active_login_codes
-    print("Getting all active code.")
-    db = SessionLocal()
-    active_codes = db.query(LoginCode).filter(LoginCode.is_active == True).all()
-    db.close()
-    active_login_codes.replace({code.code for code in active_codes})
-    ic(active_login_codes)
-
-
 def check_and_schedule_codes(session):
     # Query active LoginCode instances
     active_codes = session.query(LoginCode).filter(LoginCode.is_active == True).all()
@@ -156,9 +145,6 @@ def check_and_schedule_codes(session):
 
     # Commit any changes made during the session
     session.commit()
-
-
-# event.listen(SessionLocal, "after_commit", get_all_active_login_codes_set)
 
 
 def get_model_info_by_user(user_uuid: str) -> List[ModelInfo]:

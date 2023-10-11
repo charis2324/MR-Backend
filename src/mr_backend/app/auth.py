@@ -13,7 +13,6 @@ from mr_backend.database.db_manager import (
     get_username_if_active,
     update_user_uuid_if_active_and_none,
 )
-from mr_backend.state import active_login_codes
 
 from .models import (
     LoginCode,
