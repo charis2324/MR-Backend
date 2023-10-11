@@ -157,10 +157,10 @@ def get_furniture_model(uuid: str):
 
 
 @furniture_router.get("/{uuid}/preview")
-def get_furniture_preview(task_id: str, return_png: Optional[bool] = None):
-    status = get_preview_status(task_id)
+def get_furniture_preview(uuid: str, return_png: Optional[bool] = None):
+    status = get_preview_status(uuid)
     if status == TaskStatusEnum.completed:
-        compress_preview, file_type = get_preview(task_id)
+        compress_preview, file_type = get_preview(uuid)
         decompress_preview = decompress(compress_preview)
         if return_png:
             try:

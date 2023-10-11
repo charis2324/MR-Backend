@@ -15,10 +15,10 @@ from .models import (
 )
 from .security import get_password_hash
 
-user_router = APIRouter(prefix="/users")
+user_router = APIRouter()
 
 
-@user_router.get("/", response_model=UserInfoResponse)
+@user_router.get("/me", response_model=UserInfoResponse)
 def get_self_info(
     current_user: Annotated[UserInDB, Depends(get_current_user)],
 ):
@@ -29,7 +29,7 @@ def get_self_info(
     )
 
 
-@user_router.get("/{user_uuid}/furnitures/info")
+@user_router.get("/users/{user_uuid}/furnitures/info")
 def read_user_furnitures_info(user_uuid: str):
     user_model_info = get_model_info_by_user(user_uuid)
     model_info_bases = [
