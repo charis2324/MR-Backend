@@ -2,12 +2,13 @@ from datetime import datetime, timedelta
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, status
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from icecream import ic
 
 from mr_backend.database.db_manager import (
     add_login_code,
+    create_user,
     get_user_by_username,
     get_username_if_active,
     update_user_uuid_if_active_and_none,
@@ -19,16 +20,22 @@ from .models import (
     LoginCodeResponse,
     LoginCodeSuccessResponse,
     Token,
+    UserCreate,
     UserInDB,
 )
-from .security import create_access_token, decode_access_token, verify_password
+from .security import (
+    create_access_token,
+    decode_access_token,
+    get_password_hash,
+    verify_password,
+)
 from .utils import generate_random_string
 
 LOGIN_CODE_LENGTH = 6
 LOGIN_CODE_MAX_TRIES = 1000
 LOGIN_CODE_EXPIRATION_MINUTES = 6
 
-auth_router = APIRouter()
+auth_router = APIRouter(prefix="/auth")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 active_login_code = set()
@@ -129,7 +136,7 @@ def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@auth_router.get("/login_code", response_model=LoginCodeResponse)
+@auth_router.get("/login-code", response_model=LoginCodeResponse)
 def get_login_code():
     for _ in range(LOGIN_CODE_MAX_TRIES):
         if (
@@ -146,21 +153,16 @@ def get_login_code():
     )
 
 
-@auth_router.post("/login_code/verify", response_model=LoginCodeSuccessResponse)
-def submit_login_code(
+@auth_router.post("/login-code/verify", response_model=LoginCodeSuccessResponse)
+def verify_login_code(
     current_user: Annotated[UserInDB, Depends(get_current_user)],
     login_code_reponse: LoginCode,
 ):
-    global active_login_codes
-    httpException = HTTPException(status_code=400, detail="Login code is not valid.")
     login_code = login_code_reponse.login_code
-    if not active_login_codes.contains(login_code):
-        raise httpException
-
     user_uuid = current_user.uuid
     is_success = update_user_uuid_if_active_and_none(login_code, user_uuid)
     if not is_success:
-        raise httpException
+        raise HTTPException(status_code=400, detail="Login code is not valid.")
     return LoginCodeSuccessResponse(
         login_code=login_code,
         user_uuid=user_uuid,
@@ -168,7 +170,7 @@ def submit_login_code(
     )
 
 
-@auth_router.post("/login_code/token")
+@auth_router.post("/token-with-login-code")
 def login_with_login_code_for_access_token(
     response: Response, login_code_reponse: LoginCode
 ):
@@ -184,3 +186,22 @@ def login_with_login_code_for_access_token(
     access_token = create_access_token(data={"sub": username})
     update_token_cookie(response, access_token)
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@auth_router.get("/logout")
+def logout():
+    response = RedirectResponse("/login")
+    response.delete_cookie("access_token")
+    return response
+
+
+@auth_router.post("/register")
+def register(new_user: UserCreate):
+    hashed_password = get_password_hash(new_user.password)
+    user = create_user(new_user.username, hashed_password)
+    if user is None:
+        raise HTTPException(status_code=400, detail="Username is already taken")
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "User registered successfully"},
+    )

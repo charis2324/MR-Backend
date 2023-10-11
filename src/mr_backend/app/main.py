@@ -2,7 +2,7 @@ import os
 from threading import Thread
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -33,10 +33,14 @@ inference_thread_ready.wait()
 
 app = FastAPI()
 app.add_middleware(GZipMiddleware, minimum_size=1000)
-app.include_router(auth_router)
-app.include_router(task_router)
-app.include_router(user_router)
-app.include_router(furniture_router)
+
+api_v1_router = APIRouter(prefix="/api/v1")
+api_v1_router.include_router(auth_router)
+api_v1_router.include_router(task_router)
+api_v1_router.include_router(user_router)
+api_v1_router.include_router(furniture_router)
+
+app.include_router(api_v1_router)
 
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=templates_dir)

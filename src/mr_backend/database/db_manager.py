@@ -158,7 +158,7 @@ def check_and_schedule_codes(session):
     session.commit()
 
 
-event.listen(SessionLocal, "after_commit", get_all_active_login_codes_set)
+# event.listen(SessionLocal, "after_commit", get_all_active_login_codes_set)
 
 
 def get_model_info_by_user(user_uuid: str) -> List[ModelInfo]:

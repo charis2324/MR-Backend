@@ -1,23 +1,28 @@
 import io
 import math
 import tempfile
+from gzip import decompress
 from pathlib import Path
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 from uuid import uuid4
 
 import imageio
 import trimesh
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from icecream import ic
 
 from mr_backend.app.auth import get_current_user
+from mr_backend.app.utils import extract_frame_from_bytes
 from mr_backend.database.db_manager import (
     create_model_info,
     create_model_preview,
     get_model_info_by_user,
     get_model_info_by_uuid,
+    get_model_preview_status,
     get_models_info,
+    get_preview,
+    get_preview_status,
     get_trimesh,
     store_trimesh,
     update_model_info_by_uuid,
@@ -30,12 +35,19 @@ from mr_backend.shape_inference.clean_mesh import (
 )
 from mr_backend.shape_inference.inference_server import export_trimesh_to_obj_str
 
-from .models import FurnitureInfoBase, FurnitureInfos, ModelInfoUpdate, UserInDB
+from .models import (
+    FurnitureInfoBase,
+    FurnitureInfos,
+    ModelInfoUpdate,
+    TaskStatus,
+    TaskStatusEnum,
+    UserInDB,
+)
 
-furniture_router = APIRouter()
+furniture_router = APIRouter(prefix="/furnitures")
 
 
-@furniture_router.get("/furnitures/info", response_model=FurnitureInfos)
+@furniture_router.get("/info", response_model=FurnitureInfos)
 def read_furniture_info(skip: int, limit: int):
     furniture_infos, count = get_models_info(skip, limit)
     furniture_infos = [
@@ -45,7 +57,7 @@ def read_furniture_info(skip: int, limit: int):
     return FurnitureInfos(furniture_infos=furniture_infos, total_furniture_count=count)
 
 
-@furniture_router.post("/furnitures/upload", response_model=FurnitureInfoBase)
+@furniture_router.post("/upload", response_model=FurnitureInfoBase)
 async def upload_furniture(
     current_user: Annotated[UserInDB, Depends(get_current_user)],
     files: List[UploadFile] = File(...),
@@ -85,7 +97,7 @@ async def upload_furniture(
             raise httpExecption
 
 
-@furniture_router.get("/model_info/{uuid}")
+@furniture_router.get("/{uuid}/info")
 def read_furnitures_info_by_uuid(uuid: str):
     model_info = get_model_info_by_uuid(uuid)
     if model_info is None:
@@ -96,8 +108,8 @@ def read_furnitures_info_by_uuid(uuid: str):
     return FurnitureInfoBase(**furniture_info_dict)
 
 
-@furniture_router.put("/model_info/{uuid}")
-def update_model_info(
+@furniture_router.put("/{uuid}/info")
+def update_furniture_info(
     current_user: Annotated[UserInDB, Depends(get_current_user)],
     uuid: str,
     update_data: ModelInfoUpdate,
@@ -123,21 +135,8 @@ def update_model_info(
     return FurnitureInfoBase(**furniture_info_dict)
 
 
-@furniture_router.get("/users/{user_uuid}/model_info")
-def read_user_model_info(user_uuid: str):
-    user_model_info = get_model_info_by_user(user_uuid)
-    model_info_bases = [
-        FurnitureInfoBase(**{**info.__dict__, "username": ""})
-        for info in user_model_info
-    ]
-    return FurnitureInfos(
-        furniture_infos=model_info_bases, total_furniture_count=len(model_info_bases)
-    )
-
-
-@furniture_router.get("/furnitures/{uuid}")
-def get_task_results(uuid: str):
-    print(f"/furnitures/{uuid}")
+@furniture_router.get("/{uuid}")
+def get_furniture_model(uuid: str):
     # it is actually a Scene
     scene = get_trimesh(uuid)
     if scene is None:
@@ -154,4 +153,54 @@ def get_task_results(uuid: str):
         headers={
             "Content-Disposition": f"attachment; filename={uuid}.obj",
         },
+    )
+
+
+@furniture_router.get("/{uuid}/preview")
+def get_furniture_preview(task_id: str, return_png: Optional[bool] = None):
+    status = get_preview_status(task_id)
+    if status == TaskStatusEnum.completed:
+        compress_preview, file_type = get_preview(task_id)
+        decompress_preview = decompress(compress_preview)
+        if return_png:
+            try:
+                decompress_preview = extract_frame_from_bytes(decompress_preview, 0)
+                file_type = "png"
+            except:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Failed to convert preview to PNG.",
+                )
+        return Response(content=decompress_preview, media_type=f"image/{file_type}")
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Results not ready. Please check the task's status before retrieving the results.",
+        )
+
+
+@furniture_router.get("/{uuid}/preview/status", response_model=TaskStatus)
+def read_furniture_preview_status(task_id: str):
+    status = get_model_preview_status(task_id)
+    if status == TaskStatusEnum.completed:
+        return TaskStatus(
+            task_id=task_id,
+            status=TaskStatusEnum.completed,
+            message="Your task preview has been completed. You may now retrieve the results.",
+        )
+    if status == TaskStatusEnum.waiting or status == TaskStatusEnum.processing:
+        return TaskStatus(
+            task_id=task_id,
+            status=TaskStatusEnum.processing,
+            message="Your task preview is still being processed.",
+        )
+    if status == TaskStatusEnum.failed:
+        return TaskStatus(
+            task_id=task_id,
+            status=TaskStatusEnum.failed,
+            message="Your task preview failed.",
+        )
+    raise HTTPException(
+        status_code=400,
+        detail="Invalid task ID. Please check your task ID.",
     )

@@ -36,11 +36,11 @@ from .models import (
 )
 from .utils import extract_frame_from_bytes, get_duration_estimation
 
-task_router = APIRouter()
+task_router = APIRouter(prefix="/tasks")
 
 
 @task_router.post("/generate", response_model=GenerationTaskResponse)
-def receive_generation_equest(
+def submit_generation_task(
     current_user: Annotated[UserInDB, Depends(get_current_user)],
     request_body: GenerationTaskRequest = Body(...),
 ):
@@ -59,7 +59,7 @@ def receive_generation_equest(
     )
 
 
-@task_router.get("/tasks/{task_id}/result/status", response_model=TaskStatus)
+@task_router.get("/{task_id}/status", response_model=TaskStatus)
 def read_task_status(task_id: str):
     status = get_task_status(task_id)
     if status == TaskStatusEnum.completed:
@@ -84,75 +84,3 @@ def read_task_status(task_id: str):
         status_code=400,
         detail="Invalid task ID. Please check your task ID.",
     )
-
-
-@task_router.get("/tasks/{task_id}/result")
-def get_task_results(task_id: str):
-    status = get_task_status(task_id)
-    if status == TaskStatusEnum.completed:
-        # it is actually a Scene
-        trimesh = merge_geometry(get_trimesh(task_id))
-        obj_str = export_trimesh_to_obj_str(trimesh)
-        obj_bytes = BytesIO(obj_str.encode())
-        return StreamingResponse(
-            obj_bytes,
-            media_type="application/obj",
-            headers={
-                "Content-Disposition": f"attachment; filename={task_id}.obj",
-            },
-        )
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail="Results not ready. Please check the task's status before retrieving the results.",
-        )
-
-
-@task_router.get("/tasks/{task_id}/preview/status", response_model=TaskStatus)
-def read_task_preview_status(task_id: str):
-    status = get_model_preview_status(task_id)
-    if status == TaskStatusEnum.completed:
-        return TaskStatus(
-            task_id=task_id,
-            status=TaskStatusEnum.completed,
-            message="Your task preview has been completed. You may now retrieve the results.",
-        )
-    if status == TaskStatusEnum.waiting or status == TaskStatusEnum.processing:
-        return TaskStatus(
-            task_id=task_id,
-            status=TaskStatusEnum.processing,
-            message="Your task preview is still being processed.",
-        )
-    if status == TaskStatusEnum.failed:
-        return TaskStatus(
-            task_id=task_id,
-            status=TaskStatusEnum.failed,
-            message="Your task preview failed.",
-        )
-    raise HTTPException(
-        status_code=400,
-        detail="Invalid task ID. Please check your task ID.",
-    )
-
-
-@task_router.get("/tasks/{task_id}/preview")
-def get_task_results(task_id: str, return_png: Optional[bool] = None):
-    status = get_preview_status(task_id)
-    if status == TaskStatusEnum.completed:
-        compress_preview, file_type = get_preview(task_id)
-        decompress_preview = decompress(compress_preview)
-        if return_png:
-            try:
-                decompress_preview = extract_frame_from_bytes(decompress_preview, 0)
-                file_type = "png"
-            except:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Failed to convert preview to PNG.",
-                )
-        return Response(content=decompress_preview, media_type=f"image/{file_type}")
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail="Results not ready. Please check the task's status before retrieving the results.",
-        )
