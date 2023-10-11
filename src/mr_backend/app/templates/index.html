@@ -1,848 +1,801 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
+{% block content %}
+<section id="generate">
+    <h2>Generate</h2>
+    <form id="generateForm">
+        <label for="prompt">Prompt:</label>
+        <input type="text" id="prompt" name="prompt">
+        <button type="button" id="random-prompt-button">Random Prompt</button>
+        <label for="guidance">Guidance Scale: (defaults to 15.0) — A higher guidance scale value encourages the
+            model
+            to generate images closely linked to the text prompt at the expense of lower image quality. Guidance
+            scale is enabled when guidance_scale > 1.</label>
+        <input type="number" id="guidance" name="guidance_scale" min="0" max="50" value="15">
+        <button type="submit" id="submit-button">Submit</button>
+    </form>
+    <div id="response"></div>
+    <div id="progress-div">
+        <progress id="progress-bar" value="0" max="100"></progress>
+        <p id="progress-text"></p>
+    </div>
+</section>
+<section id="preview">
+    <h2>Task Preview</h2>
+    <div id="previewResults"></div>
+</section>
+{% endblock %}
+{% block script %}
+<script>
+    function formatDuration(duration) {
+        var match = duration.match(/PT(\d+H)?(\d+M)?(\d+(\.\d+)?S)?/);
+        var hours = (parseInt(match[1]) || 0);
+        var minutes = (parseInt(match[2]) || 0);
+        var seconds = (parseFloat(match[3]) || 0);
+        return hours * 3600 + minutes * 60 + seconds;
+    }
+    function getRandomElement(array) {
+        let randomIndex = Math.floor(Math.random() * array.length);
+        return array[randomIndex];
+    }
+    let furniturePrompts = [
+        "a chair made of bamboo",
+        "an antique mahogany table",
+        "a modern minimalist sofa",
+        "a bed with a built-in bookshelf",
+        "an office chair with lumbar support",
+        "a dresser with a mirror",
+        "a wooden rocking chair",
+        "a dining table that seats eight",
+        "a futon that converts into a bed",
+        "a coffee table with storage compartments",
+        "a nightstand with a built-in lamp",
+        "a bunk bed for kids",
+        "an armchair with a footrest",
+        "a bookshelf that hangs on the wall",
+        "a desk with a hutch",
+        "a bar stool with a backrest",
+        "a patio table with an umbrella",
+        "a vanity with a stool",
+        "a sectional sofa for the living room",
+        "a loft bed with a desk underneath",
+        "a TV stand with shelves",
+        "a bedside table with a drawer",
+        "a recliner for relaxing",
+        "an ottoman with storage inside",
+        "a chaise lounge for the bedroom",
+        "a wardrobe with sliding doors",
+        "a kitchen island with a butcher block top",
+        "an adjustable height desk",
+        "a console table for the hallway",
+        "a shoe rack for the entryway",
+        "a cabinet with glass doors",
+        "a bench for the end of the bed",
+        "a chest of drawers for the bedroom",
+        "a coat rack for the foyer",
+        "a sideboard for the dining room",
+        "a bean bag chair for the game room",
+        "a sleigh bed for the master bedroom",
+        "a roll-top desk for the office",
+        "a daybed for the guest room",
+        "a crib for the nursery",
+        "a settee for the sitting room",
+        "a drafting table for the studio",
+        "a Murphy bed for the small apartment",
+        "a chifforobe for extra storage",
+        "a hope chest for keepsakes",
+        "a credenza for the office",
+        "a divan for lounging",
+        "a chesterfield sofa for the living room",
+        "a canopied porch swing",
+        "a breakfast nook table",
+        "an armoire for the bedroom",
+        "a loveseat with plush cushions",
+        "a computer desk with a keyboard tray",
+        "a folding chair for outdoor events",
+        "a gaming chair with built-in speakers",
+        "a patio set with a glass-top table",
+        "a vanity table with a tri-fold mirror",
+        "a storage bench for the hallway",
+        "an accent chair with vibrant upholstery",
+        "a corner desk for small spaces",
+        "a floating shelf for decorative items",
+        "a children's table with matching chairs",
+        "a bar cart with wheels",
+        "a papasan chair with a cozy cushion",
+        "a media console with hidden compartments",
+        "a standing desk with adjustable height",
+        "a ladder bookshelf for displaying books",
+        "a pouf ottoman for extra seating",
+        "a folding table for hosting parties",
+        "a mantel clock for the fireplace",
+        "a wall-mounted coat rack with hooks",
+        "a vanity mirror with LED lights",
+        "a pet bed with a removable cover",
+        "a wine rack with space for bottles and glasses",
+        "a corner TV stand for maximizing space",
+        "a jewelry armoire with multiple drawers",
+        "a hammock chair for outdoor relaxation",
+        "a picnic table with attached benches",
+        "a hall tree with storage compartments",
+        "a drafting stool with adjustable height",
+        "a corner shelf for displaying collectibles",
+        "a makeup vanity with a swivel mirror",
+        "a pet crate that doubles as a side table",
+        "a folding screen for room dividers",
+        "a magazine rack for organizing reading materials",
+        "an entryway table with a bottom shelf",
+        "a CD storage cabinet with glass doors",
+        "a bar table with built-in wine storage",
+        "a wood-burning fire pit for outdoor gatherings",
+        "a ladder desk with shelves",
+        "a plant stand with multiple tiers",
+        "a folding futon for versatile seating",
+        "a wall-mounted shoe rack",
+        "a corner curio cabinet for displaying collectibles",
+        "a gaming desk with RGB lighting",
+        "a wall-mounted TV shelf",
+        "a pet sofa with removable washable covers",
+        "a folding step stool for reaching high places",
+        "a floating TV stand for a sleek look",
+        "a storage ottoman with a reversible tray top",
+        "a corner bar cabinet for home entertaining",
+        "a rocking recliner with padded arms",
+        "a folding picnic table with benches",
+        "a wall-mounted wine rack",
+        "a storage chest with decorative hardware",
+        "a standing coat rack with multiple hooks",
+        "a chair made of bamboo",
+        "an antique mahogany table",
+        "a modern minimalist sofa",
+        "a bed with a built-in bookshelf",
+        "an office chair with lumbar support",
+        "a dresser with a mirror",
+        "a wooden rocking chair",
+        "a dining table that seats eight",
+        "a futon that converts into a bed",
+        "a coffee table with storage compartments",
+        "a nightstand with a built-in lamp",
+        "a bunk bed for kids",
+        "an armchair with a footrest",
+        "a bookshelf that hangs on the wall",
+        "a desk with a hutch",
+        "a bar stool with a backrest",
+        "a patio table with an umbrella",
+        "a vanity with a stool",
+        "a sectional sofa for the living room",
+        "a loft bed with a desk underneath",
+        "a TV stand with shelves",
+        "a bedside table with a drawer",
+        "a recliner for relaxing",
+        "an ottoman with storage inside",
+        "a chaise lounge for the bedroom",
+        "a wardrobe with sliding doors",
+        "a kitchen island with a butcher block top",
+        "an adjustable height desk",
+        "a console table for the hallway",
+        "a shoe rack for the entryway",
+        "a cabinet with glass doors",
+        "a bench for the end of the bed",
+        "a chest of drawers for the bedroom",
+        "a coat rack for the foyer",
+        "a sideboard for the dining room",
+        "a bean bag chair for the game room",
+        "a sleigh bed for the master bedroom",
+        "a roll-top desk for the office",
+        "a daybed for the guest room",
+        "a crib for the nursery",
+        "a settee for the sitting room",
+        "a drafting table for the studio",
+        "a Murphy bed for the small apartment",
+        "a chifforobe for extra storage",
+        "a hope chest for keepsakes",
+        "a credenza for the office",
+        "a divan for lounging",
+        "a chesterfield sofa for the living room",
+        "a canopied porch swing",
+        "a breakfast nook table",
+        "an armoire for the bedroom",
+        "a loveseat with plush cushions",
+        "a computer desk with a keyboard tray",
+        "a folding chair for outdoor events",
+        "a gaming chair with built-in speakers",
+        "a patio set with a glass-top table",
+        "a vanity table with a tri-fold mirror",
+        "a storage bench for the hallway",
+        "an accent chair with vibrant upholstery",
+        "a corner desk for small spaces",
+        "a floating shelf for decorative items",
+        "a children's table with matching chairs",
+        "a bar cart with wheels",
+        "a papasan chair with a cozy cushion",
+        "a media console with hidden compartments",
+        "a standing desk with adjustable height",
+        "a ladder bookshelf for displaying books",
+        "a pouf ottoman for extra seating",
+        "a folding table for hosting parties",
+        "a mantel clock for the fireplace",
+        "a wall-mounted coat rack with hooks",
+        "a vanity mirror with LED lights",
+        "a pet bed with a removable cover",
+        "a wine rack with space for bottles and glasses",
+        "a corner TV stand for maximizing space",
+        "a jewelry armoire with multiple drawers",
+        "a hammock chair for outdoor relaxation",
+        "a picnic table with attached benches",
+        "a hall tree with storage compartments",
+        "a drafting stool with adjustable height",
+        "a corner shelf for displaying collectibles",
+        "a makeup vanity with a swivel mirror",
+        "a pet crate that doubles as a side table",
+        "a folding screen for room dividers",
+        "a magazine rack for organizing reading materials",
+        "an entryway table with a bottom shelf",
+        "a CD storage cabinet with glass doors",
+        "a bar table with built-in wine storage",
+        "a wood-burning fire pit for outdoor gatherings",
+        "a ladder desk with shelves",
+        "a plant stand with multiple tiers",
+        "a folding futon for versatile seating",
+        "a wall-mounted shoe rack",
+        "a corner curio cabinet for displaying collectibles",
+        "a gaming desk with RGB lighting",
+        "a wall-mounted TV shelf",
+        "a pet sofa with removable washable covers",
+        "a folding step stool for reaching high places",
+        "a floating TV stand for a sleek look",
+        "a storage ottoman with a reversible tray top",
+        "a corner bar cabinet for home entertaining",
+        "a rocking recliner with padded arms",
+        "a folding picnic table with benches",
+        "a wall-mounted wine rack",
+        "a storage chest with decorative hardware",
+        "a standing coat rack with multiple hooks",
+        "a chair made of bamboo",
+        "an antique mahogany table",
+        "a modern minimalist sofa",
+        "a bed with a built-in bookshelf",
+        "an office chair with lumbar support",
+        "a dresser with a mirror",
+        "a wooden rocking chair",
+        "a dining table that seats eight",
+        "a futon that converts into a bed",
+        "a coffee table with storage compartments",
+        "a nightstand with a built-in lamp",
+        "a bunk bed for kids",
+        "an armchair with a footrest",
+        "a bookshelf that hangs on the wall",
+        "a desk with a hutch",
+        "a bar stool with a backrest",
+        "a patio table with an umbrella",
+        "a vanity with a stool",
+        "a sectional sofa for the living room",
+        "a loft bed with a desk underneath",
+        "a TV stand with shelves",
+        "a bedside table with a drawer",
+        "a recliner for relaxing",
+        "an ottoman with storage inside",
+        "a chaise lounge for the bedroom",
+        "a wardrobe with sliding doors",
+        "a kitchen island with a butcher block top",
+        "an adjustable height desk",
+        "a console table for the hallway",
+        "a shoe rack for the entryway",
+        "a cabinet with glass doors",
+        "a bench for the end of the bed",
+        "a chest of drawers for the bedroom",
+        "a coat rack for the foyer",
+        "a sideboard for the dining room",
+        "a bean bag chair for the game room",
+        "a sleigh bed for the master bedroom",
+        "a roll-top desk for the office",
+        "a daybed for the guest room",
+        "a crib for the nursery",
+        "a settee for the sitting room",
+        "a drafting table for the studio",
+        "a Murphy bed for the small apartment",
+        "a chifforobe for extra storage",
+        "a hope chest for keepsakes",
+        "a credenza for the office",
+        "a divan for lounging",
+        "a chesterfield sofa for the living room",
+        "a canopied porch swing",
+        "a breakfast nook table",
+        "an armoire for the bedroom",
+        "a loveseat with plush cushions",
+        "a computer desk with a keyboard tray",
+        "a folding chair for outdoor events",
+        "a gaming chair with built-in speakers",
+        "a patio set with a glass-top table",
+        "a vanity table with a tri-fold mirror",
+        "a storage bench for the hallway",
+        "an accent chair with vibrant upholstery",
+        "a corner desk for small spaces",
+        "a floating shelf for decorative items",
+        "a children's table with matching chairs",
+        "a bar cart with wheels",
+        "a papasan chair with a cozy cushion",
+        "a media console with hidden compartments",
+        "a standing desk with adjustable height",
+        "a ladder bookshelf for displaying books",
+        "a pouf ottoman for extra seating",
+        "a folding table for hosting parties",
+        "a mantel clock for the fireplace",
+        "a wall-mounted coat rack with hooks",
+        "a vanity mirror with LED lights",
+        "a pet bed with a removable cover",
+        "a wine rack with space for bottles and glasses",
+        "a corner TV stand for maximizing space",
+        "a jewelry armoire with multiple drawers",
+        "a hammock chair for outdoor relaxation",
+        "a picnic table with attached benches",
+        "a hall tree with storage compartments",
+        "a drafting stool with adjustable height",
+        "a corner shelf for displaying collectibles",
+        "a makeup vanity with a swivel mirror",
+        "a pet crate that doubles as a side table",
+        "a folding screen for room dividers",
+        "a magazine rack for organizing reading materials",
+        "an entryway table with a bottom shelf",
+        "a CD storage cabinet with glass doors",
+        "a bar table with built-in wine storage",
+        "a wood-burning fire pit for outdoor gatherings",
+        "a ladder desk with shelves",
+        "a plant stand with multiple tiers",
+        "a folding futon for versatile seating",
+        "a wall-mounted shoe rack",
+        "a corner curio cabinet for displaying collectibles",
+        "a gaming desk with RGB lighting",
+        "a wall-mounted TV shelf",
+        "a pet sofa with removable washable covers",
+        "a folding step stool for reaching high places",
+        "a floating TV stand for a sleek look",
+        "a storage ottoman with a reversible tray top",
+        "a corner bar cabinet for home entertaining",
+        "a rocking recliner with padded arms",
+        "a folding picnic table with benches",
+        "a wall-mounted wine rack",
+        "a storage chest with decorative hardware",
+        "a standing coat rack with multiple hooks",
+        "a chairmade of recycled plastic",
+        "an antique oak dining table",
+        "a velvet tufted sofa",
+        "a platform bed with built-in storage",
+        "an ergonomic office chair",
+        "a mirrored vanity table",
+        "a rattan rocking chair",
+        "a extendable dining table",
+        "a convertible sofa",
+        "a glass coffee table",
+        "a bedside table with wireless charging",
+        "a loft bed with a slide",
+        "a leather armchair",
+        "a wall-mounted bookshelf",
+        "a standing desk converter",
+        "a swivel bar stool",
+        "a folding picnic table with umbrella",
+        "a mirrored vanity with a Hollywood-style lighted mirror",
+        "a modular sectional sofa",
+        "a loft bed with a walk-in closet underneath",
+        "a TV stand with a built-in electric fireplace",
+        "a floating nightstand",
+        "a massage recliner chair",
+        "an ottoman with a built-in Bluetooth speaker",
+        "a velvet chaise lounge",
+        "a sliding door wardrobe",
+        "a marble kitchen island",
+        "an adjustable standing desk",
+        "a narrow console table",
+        "a shoe cabinet with multiple compartments",
+        "a glass display cabinet",
+        "a storage bench with shoe racks",
+        "a chest of drawers with a hidden compartment",
+        "a wall-mounted coat rack with a shelf",
+        "a buffet table for serving",
+        "a bean bag chair for gaming",
+        "a canopy bed with curtains",
+        "a secretary desk",
+        "a daybed with trundle",
+        "a convertible crib",
+        "a settee with floral upholstery",
+        "an artist's drafting table",
+        "a wall bed with a fold-out desk",
+        "a wardrobe with a built-in jewelry organizer",
+        "a vintage hope chest",
+        "a modern credenza",
+        "a velvet divan",
+        "a leather chesterfield sofa",
+        "a porch swing with a canopy",
+        "a round breakfast table",
+        "a mirrored armoire",
+        "a reclining loveseat",
+        "a corner computer desk",
+        "a folding camping chair",
+        "a gaming chair with a massage function",
+        "a patio dining set with a umbrella",
+        "a vanity set with a tri-fold mirror",
+        "a hallway storage bench",
+        "an accent chair with a geometric pattern",
+        "a floating corner desk",
+        "a wall-mounted shelf with hooks",
+        "a kids' table and chair set",
+        "a bar cart with a wine rack",
+        "a papasan chair with a fuzzy cushion",
+        "a TV console with built-in speakers",
+        "a standing desk with a built-in treadmill",
+        "a ladder-style bookshelf",
+        "a round pouf ottoman",
+        "a folding dining table",
+        "a wall clock with pendulum",
+        "a freestanding coat rack",
+        "a vanity mirror with built-in lights",
+        "a pet bed with memory foam padding",
+        "a wine rack with a stemware holder",
+        "a corner TV mount",
+        "a standing jewelry armoire",
+        "a hammock for two",
+        "a picnic table with detached benches",
+        "a hall tree with a bench",
+        "a drafting stool with a backrest",
+        "a wall-mounted corner shelf",
+        "a makeup vanity with a lighted mirror",
+        "a pet crate that resembles a side table",
+        "a folding room divider",
+        "a magazine holder with a built-in table",
+        "an entryway table with drawers",
+        "a vinyl record storage cabinet",
+        "a bar table with a built-in cooler",
+        "a propane fire pit for outdoor gatherings",
+        "a ladder desk with a built-in file cabinet",
+        "a plant stand with a geometric design",
+        "a folding futon sofa bed",
+        "a wall-mounted shoe organizer",
+        "a corner curio cabinet with glass shelves",
+        "a gaming desk with built-in RGB lighting",
+        "a wall-mounted TV stand",
+        "a pet sofa with a storage compartment",
+        "a folding step stool with a handle",
+        "a floating entertainment center",
+        "a storage ottoman with a serving tray",
+        "a corner bar unit with wine storage",
+        "a rocking recliner chair with a massage function",
+        "a folding picnic table with four seats",
+        "a wall-mounted wine bottle and glass holder",
+        "a storage chest with a vintage design",
+        "a standing coat rack with a shoe shelf",
+        "a chair made of recycled materials",
+        "a picnic table with detached benches",
+        "a hall tree with a bench",
+        "a drafting stool with a backrest",
+        "a wall-mounted corner shelf",
+        "a makeup vanity with a lighted mirror",
+        "a pet crate that resembles a side table",
+        "a folding room divider",
+        "a magazine holder with a built-in table",
+        "an entryway table with drawers",
+        "a vinyl record storage cabinet",
+        "a bar table with a built-in cooler",
+        "a propane fire pit for outdoor gatherings",
+        "a ladder desk with a built-in file cabinet",
+        "a plant stand with a geometric design",
+        "a folding futon sofa bed",
+        "a wall-mounted shoe organizer",
+        "a corner curio cabinet with glass shelves",
+        "a gaming desk with built-in RGB lighting",
+        "a wall-mounted TV stand",
+        "a pet sofa with a storage compartment",
+        "a folding step stool with a handle",
+        "a floating entertainment center",
+        "a storage ottoman with a serving tray",
+        "a corner bar unit with wine storage",
+        "a rocking recliner chair with a massage function",
+        "a folding picnic table with four seats",
+        "a wall-mounted wine bottle and glass holder",
+        "a storage chest with a vintage design",
+        "a standing coat rack with a shoe shelf",
+        "a chair made of recycled materials",
+        "a dining table with upholstered chairs",
+        "a bookshelf with adjustable shelves",
+        "a nightstand with a built-in charging station",
+        "a desk lamp with adjustable brightness",
+        "a bathroom vanity with a marble countertop",
+        "a floor lamp with a built-in shelf",
+        "a coffee table with hidden storage compartments",
+        "a garden bench with a decorative backrest",
+        "a desk organizer with multiple compartments",
+        "a wine rack with space for hanging glasses",
+        "a chaise lounge with a reclining feature",
+        "a storage cabinet with sliding doors",
+        "a ceiling fan with a remote control",
+        "a computer chair with ergonomic design",
+        "a bar stool with a swivel seat",
+        "a wall clock with oversized numbers",
+        "a coat hanger with multiple hooks",
+        "a patio umbrella with a crank mechanism",
+        "a floor mirror with a wooden frame",
+        "a shoe cabinet with mirrored doors",
+        "a desk with built-in storage drawers",
+        "a corner sofa with a pull-out bed",
+        "a wall-mounted bookcase with adjustable shelves",
+        "a kitchen island with a granite countertop",
+        "a bedside table with a built-in lamp",
+        "a folding chair with a padded seat",
+        "a storage bin with a hinged lid",
+        "a bar cart with wheels for easy mobility",
+        "a desk calendar with tear-off pages",
+        "a storage bench with a cushioned seat",
+        "a pendant light with a modern design",
+        "a display cabinet with glass doors",
+        "a wall shelf with decorative brackets",
+        "a standing desk converter with adjustable height",
+        "a storage basket with handles",
+        "a console table with a mirrored surface",
+        "a desk organizer with a charging dock",
+        "a wine cooler with temperature control",
+        "a floating shelf with a hidden compartment",
+        "a desk chair with lumbar support",
+        "a wall-mounted coat rack with shelf",
+        "a bar table with adjustable height",
+        "a storage trunk with a vintage look",
+        "a desk lamp with a flexible neck",
+        "a shoe rack with stackable tiers",
+        "a corner desk with storage shelves",
+        "a wall mirror with a decorative frame",
+        "a magazine rack with a built-in lamp",
+        "a storage cabinet with a lock",
+        "a desk with a built-in bookshelf",
+        "a bar stool with a backrest and armrests",
+        "a wall-mounted key holder with hooks",
+        "a storage shelf with fabric bins",
+        "a desk fan with multiple speed settings",
+        "a bench with a built-in storage compartment",
+        "a corner TV stand with open shelves",
+        "a desk organizer with file dividers",
+        "a wine glass rack with hanging stemware slots",
+        "a folding table with adjustable height",
+        "a wall-mounted coat hook rack",
+        "a storage cube with removable drawers",
+        "a desk lamp with a USB charging port",
+        "a shoe bench with a cushioned seat",
+        "a bar cabinet with a mirrored back",
+        "a wall-mounted mirror with built-in LED lights",
+        "a storage shelf with wire baskets",
+        "a desk with a pull-out keyboard tray",
+        "a bar table with a glass top",
+        "a storage ottoman with hidden compartments",
+        "a corner shelf with zigzag design",
+        "a wall-mounted magazine rack",
+        "a desk organizer with a pen holder",
+        "a wine rack with space for hanging glasses",
+        "a chaise lounge with a reclining feature",
+        "a storage cabinet with sliding doors",
+        "a ceiling fan with a remote control",
+        "a computer chair with ergonomic design",
+        "a bar stool with a swivel seat",
+        "a wall clock with oversized numbers",
+        "a coat hanger with multiple hooks",
+        "a patio umbrella with a crank mechanism",
+        "a floor mirror with a wooden frame",
+        "a shoe cabinet with mirrored doors",
+        "a desk with built-in storage drawers",
+        "a corner sofa with a pull-out bed",
+        "a wall-mounted bookcase with adjustable shelves",
+        "a kitchen island with a granite countertop",
+        "a bedside table with a built-in lamp",
+        "a folding chair with a padded seat",
+        "a storage bin with a hinged lid",
+        "a bar cart with wheels for easy mobility",
+        "a desk calendar with tear-off pages",
+        "a storage bench with a cushioned seat",
+        "a pendant light with a modern design",
+        "a display cabinet with glass doors",
+        "a wall shelf with decorative brackets",
+        "a standing desk converter with adjustable height",
+        "a storage basket with handles",
+        "a console table with a mirrored surface",
+        "a desk organizer with a charging dock",
+        "a wine cooler with temperature control",
+        "a floating shelf with a hidden compartment",
+        "a desk chair with lumbar support",
+        "a wall-mounted coat rack with shelf",
+        "a bar table with adjustable height",
+        "a storage trunk with a vintage look",
+        "a desk lamp with a flexible neck",
+        "a shoe rack with stackable tiers",
+        "a corner desk with storage shelves",
+        "a wall mirror with a decorative frame",
+        "a magazine rack with a built-in lamp",
+        "a storage cabinet with a lock",
+        "a desk with a built-in bookshelf",
+        "a bar stool with a backrest and armrests",
+        "a wall-mounted key holder with hooks",
+        "a storage shelf with fabric bins",
+        "a desk fan with multiple speed settings",
+        "a bench with a built-in storage compartment",
+        "a corner TV stand with open shelves",
+        "a desk organizer with file dividers",
+        "a wine glass rack with hanging stemware slots",
+        "a folding table with adjustable height",
+        "a wall-mounted coat hook rack",
+        "a storage cube with removable drawers",
+        "a desk lamp with a USB charging port",
+        "a shoe bench with a cushioned seat",
+        "a bar cabinet with a mirrored back",
+        "a wall-mounted mirror with built-in LED lights",
+        "a storage shelf with wire baskets",
+        "a desk with a pull-out keyboard tray",
+        "a bar table with a glass top",
+        "a storage ottoman with hidden compartments",
+        "a corner shelf with zigzag design",
+        "a wall-mounted magazine rack",
+        "a desk organizer with a pen holder",
+        "a wine rack with space for hanging glasses",
+        "a chaise lounge with a reclining feature",
+        "a storage cabinet with sliding doors",
+        "a ceiling fan with a remote control",
+        "a computer chair with ergonomic design",
+        "a bar stool with a swivel seat",
+        "a wall clock with oversized numbers",
+        "a coat hanger with multiple hooks",
+        "a patio umbrella with a crank mechanism",
+        "a floor mirror with a wooden frame",
+        "a shoe cabinet with mirrored doors",
+        "a desk with built-in storage drawers",
+        "a corner sofa with a pull-out bed",
+        "a wall-mounted bookcase with adjustable shelves",
+        "a kitchen island with a granite countertop",
+        "a bedside table with a built-in lamp",
+        "a folding chair with a padded seat",
+        "a storage bin with a hinged lid",
+        "a bar cart with wheels for easy mobility",
+        "a desk calendar with tear-off pages",
+        "a storage bench with a cushioned seat",
+        "a pendant light with a modern design",
+        "a display cabinet with glass doors",
+        "a wall shelf with decorative brackets",
+        "a standing desk converter with adjustable height",
+        "a storage basket with handles",
+        "a console table with a mirrored surface",
+        "a desk organizer with a charging dock",
+        "a wine cooler with temperature control",
+        "a floating shelf with a hidden compartment",
+        "a desk chair with lumbar support",
+        "a wall-mounted coat rack with shelf",
+        "a bar table with adjustable height",
+        "a storage trunk with a vintage look",
+        "a desk lamp with a flexible neck",
+        "a shoe rack with stackable tiers",
+        "a corner desk with storage shelves",
+        "a wall mirror with a decorative frame",
+        "a magazine rack with a built-in lamp"
+    ];
+    var task_id;
+    var randomPromptButton = document.getElementById('random-prompt-button');
+    var progressBarDiv = document.getElementById('progress-div');
+    var progressBar = document.getElementById('progress-bar');
+    var progressText = document.getElementById('progress-text');
+    var submitButton = document.getElementById('submit-button');
+    var pollingInterval;
+    const promptInput = document.getElementById('prompt');
+    promptInput.value = getRandomElement(furniturePrompts);
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MR Backend</title>
-    <link href="/static/css/styles.css" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='/favicon/apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', path='/favicon/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', path='/favicon/favicon-16x16.png') }}">
-    <link rel="manifest" href="{{ url_for('static', path='/favicon/site.webmanifest') }}">
-</head>
-
-<body>
-    <header class="header">
-        <div class="logo">
-            <a class="home-anchor" href="/">
-                <h2>MR Backend</h2>
-            </a>
-        </div>
-        <div class="nav">
-            <a class="nav-item" href="/">
-                <div class="nav-item-box">
-                    <h4 class="nav-word">Generate</h4>
-                </div>
-            </a>
-            <a class="nav-item" href="/gallery">
-                <div class="nav-item-box">
-                    <h4 class="nav-word">Gallery</h4>
-                </div>
-            </a>
-            <a class="nav-item" href="/verify_code">
-                <div class="nav-item-box">
-                    <h4 class="nav-word">Verify Code</h4>
-                </div>
-            </a>
-            <a class="nav-item" href="/upload_furniture">
-                <div class="nav-item-box">
-                    <h4 class="nav-word">Upload Furniture</h4>
-                </div>
-            </a>
-        </div>
-        <div class="user-info">
-            <div class="user-name" id="userName">Welcome back! <b>{{username}}</b></div>
-            <a href="/logout" class="log-out-button">Log Out</a>
-        </div>
-    </header>
-    <section id="generate">
-        <h2>Generate</h2>
-        <form id="generateForm">
-            <label for="prompt">Prompt:</label>
-            <input type="text" id="prompt" name="prompt">
-            <button type="button" id="random-prompt-button">Random Prompt</button>
-            <label for="guidance">Guidance Scale: (defaults to 15.0) — A higher guidance scale value encourages the
-                model
-                to generate images closely linked to the text prompt at the expense of lower image quality. Guidance
-                scale is enabled when guidance_scale > 1.</label>
-            <input type="number" id="guidance" name="guidance_scale" min="0" max="50" value="15">
-            <button type="submit" id="submit-button">Submit</button>
-        </form>
-        <div id="response"></div>
-        <div id="progress-div">
-            <progress id="progress-bar" value="0" max="100"></progress>
-            <p id="progress-text"></p>
-        </div>
-    </section>
-    <section id="preview">
-        <h2>Task Preview</h2>
-        <div id="previewResults"></div>
-    </section>
-    <script>
-        function formatDuration(duration) {
-            var match = duration.match(/PT(\d+H)?(\d+M)?(\d+(\.\d+)?S)?/);
-            var hours = (parseInt(match[1]) || 0);
-            var minutes = (parseInt(match[2]) || 0);
-            var seconds = (parseFloat(match[3]) || 0);
-            return hours * 3600 + minutes * 60 + seconds;
-        }
-        function getRandomElement(array) {
-            let randomIndex = Math.floor(Math.random() * array.length);
-            return array[randomIndex];
-        }
-        let furniturePrompts = [
-            "a chair made of bamboo",
-            "an antique mahogany table",
-            "a modern minimalist sofa",
-            "a bed with a built-in bookshelf",
-            "an office chair with lumbar support",
-            "a dresser with a mirror",
-            "a wooden rocking chair",
-            "a dining table that seats eight",
-            "a futon that converts into a bed",
-            "a coffee table with storage compartments",
-            "a nightstand with a built-in lamp",
-            "a bunk bed for kids",
-            "an armchair with a footrest",
-            "a bookshelf that hangs on the wall",
-            "a desk with a hutch",
-            "a bar stool with a backrest",
-            "a patio table with an umbrella",
-            "a vanity with a stool",
-            "a sectional sofa for the living room",
-            "a loft bed with a desk underneath",
-            "a TV stand with shelves",
-            "a bedside table with a drawer",
-            "a recliner for relaxing",
-            "an ottoman with storage inside",
-            "a chaise lounge for the bedroom",
-            "a wardrobe with sliding doors",
-            "a kitchen island with a butcher block top",
-            "an adjustable height desk",
-            "a console table for the hallway",
-            "a shoe rack for the entryway",
-            "a cabinet with glass doors",
-            "a bench for the end of the bed",
-            "a chest of drawers for the bedroom",
-            "a coat rack for the foyer",
-            "a sideboard for the dining room",
-            "a bean bag chair for the game room",
-            "a sleigh bed for the master bedroom",
-            "a roll-top desk for the office",
-            "a daybed for the guest room",
-            "a crib for the nursery",
-            "a settee for the sitting room",
-            "a drafting table for the studio",
-            "a Murphy bed for the small apartment",
-            "a chifforobe for extra storage",
-            "a hope chest for keepsakes",
-            "a credenza for the office",
-            "a divan for lounging",
-            "a chesterfield sofa for the living room",
-            "a canopied porch swing",
-            "a breakfast nook table",
-            "an armoire for the bedroom",
-            "a loveseat with plush cushions",
-            "a computer desk with a keyboard tray",
-            "a folding chair for outdoor events",
-            "a gaming chair with built-in speakers",
-            "a patio set with a glass-top table",
-            "a vanity table with a tri-fold mirror",
-            "a storage bench for the hallway",
-            "an accent chair with vibrant upholstery",
-            "a corner desk for small spaces",
-            "a floating shelf for decorative items",
-            "a children's table with matching chairs",
-            "a bar cart with wheels",
-            "a papasan chair with a cozy cushion",
-            "a media console with hidden compartments",
-            "a standing desk with adjustable height",
-            "a ladder bookshelf for displaying books",
-            "a pouf ottoman for extra seating",
-            "a folding table for hosting parties",
-            "a mantel clock for the fireplace",
-            "a wall-mounted coat rack with hooks",
-            "a vanity mirror with LED lights",
-            "a pet bed with a removable cover",
-            "a wine rack with space for bottles and glasses",
-            "a corner TV stand for maximizing space",
-            "a jewelry armoire with multiple drawers",
-            "a hammock chair for outdoor relaxation",
-            "a picnic table with attached benches",
-            "a hall tree with storage compartments",
-            "a drafting stool with adjustable height",
-            "a corner shelf for displaying collectibles",
-            "a makeup vanity with a swivel mirror",
-            "a pet crate that doubles as a side table",
-            "a folding screen for room dividers",
-            "a magazine rack for organizing reading materials",
-            "an entryway table with a bottom shelf",
-            "a CD storage cabinet with glass doors",
-            "a bar table with built-in wine storage",
-            "a wood-burning fire pit for outdoor gatherings",
-            "a ladder desk with shelves",
-            "a plant stand with multiple tiers",
-            "a folding futon for versatile seating",
-            "a wall-mounted shoe rack",
-            "a corner curio cabinet for displaying collectibles",
-            "a gaming desk with RGB lighting",
-            "a wall-mounted TV shelf",
-            "a pet sofa with removable washable covers",
-            "a folding step stool for reaching high places",
-            "a floating TV stand for a sleek look",
-            "a storage ottoman with a reversible tray top",
-            "a corner bar cabinet for home entertaining",
-            "a rocking recliner with padded arms",
-            "a folding picnic table with benches",
-            "a wall-mounted wine rack",
-            "a storage chest with decorative hardware",
-            "a standing coat rack with multiple hooks",
-            "a chair made of bamboo",
-            "an antique mahogany table",
-            "a modern minimalist sofa",
-            "a bed with a built-in bookshelf",
-            "an office chair with lumbar support",
-            "a dresser with a mirror",
-            "a wooden rocking chair",
-            "a dining table that seats eight",
-            "a futon that converts into a bed",
-            "a coffee table with storage compartments",
-            "a nightstand with a built-in lamp",
-            "a bunk bed for kids",
-            "an armchair with a footrest",
-            "a bookshelf that hangs on the wall",
-            "a desk with a hutch",
-            "a bar stool with a backrest",
-            "a patio table with an umbrella",
-            "a vanity with a stool",
-            "a sectional sofa for the living room",
-            "a loft bed with a desk underneath",
-            "a TV stand with shelves",
-            "a bedside table with a drawer",
-            "a recliner for relaxing",
-            "an ottoman with storage inside",
-            "a chaise lounge for the bedroom",
-            "a wardrobe with sliding doors",
-            "a kitchen island with a butcher block top",
-            "an adjustable height desk",
-            "a console table for the hallway",
-            "a shoe rack for the entryway",
-            "a cabinet with glass doors",
-            "a bench for the end of the bed",
-            "a chest of drawers for the bedroom",
-            "a coat rack for the foyer",
-            "a sideboard for the dining room",
-            "a bean bag chair for the game room",
-            "a sleigh bed for the master bedroom",
-            "a roll-top desk for the office",
-            "a daybed for the guest room",
-            "a crib for the nursery",
-            "a settee for the sitting room",
-            "a drafting table for the studio",
-            "a Murphy bed for the small apartment",
-            "a chifforobe for extra storage",
-            "a hope chest for keepsakes",
-            "a credenza for the office",
-            "a divan for lounging",
-            "a chesterfield sofa for the living room",
-            "a canopied porch swing",
-            "a breakfast nook table",
-            "an armoire for the bedroom",
-            "a loveseat with plush cushions",
-            "a computer desk with a keyboard tray",
-            "a folding chair for outdoor events",
-            "a gaming chair with built-in speakers",
-            "a patio set with a glass-top table",
-            "a vanity table with a tri-fold mirror",
-            "a storage bench for the hallway",
-            "an accent chair with vibrant upholstery",
-            "a corner desk for small spaces",
-            "a floating shelf for decorative items",
-            "a children's table with matching chairs",
-            "a bar cart with wheels",
-            "a papasan chair with a cozy cushion",
-            "a media console with hidden compartments",
-            "a standing desk with adjustable height",
-            "a ladder bookshelf for displaying books",
-            "a pouf ottoman for extra seating",
-            "a folding table for hosting parties",
-            "a mantel clock for the fireplace",
-            "a wall-mounted coat rack with hooks",
-            "a vanity mirror with LED lights",
-            "a pet bed with a removable cover",
-            "a wine rack with space for bottles and glasses",
-            "a corner TV stand for maximizing space",
-            "a jewelry armoire with multiple drawers",
-            "a hammock chair for outdoor relaxation",
-            "a picnic table with attached benches",
-            "a hall tree with storage compartments",
-            "a drafting stool with adjustable height",
-            "a corner shelf for displaying collectibles",
-            "a makeup vanity with a swivel mirror",
-            "a pet crate that doubles as a side table",
-            "a folding screen for room dividers",
-            "a magazine rack for organizing reading materials",
-            "an entryway table with a bottom shelf",
-            "a CD storage cabinet with glass doors",
-            "a bar table with built-in wine storage",
-            "a wood-burning fire pit for outdoor gatherings",
-            "a ladder desk with shelves",
-            "a plant stand with multiple tiers",
-            "a folding futon for versatile seating",
-            "a wall-mounted shoe rack",
-            "a corner curio cabinet for displaying collectibles",
-            "a gaming desk with RGB lighting",
-            "a wall-mounted TV shelf",
-            "a pet sofa with removable washable covers",
-            "a folding step stool for reaching high places",
-            "a floating TV stand for a sleek look",
-            "a storage ottoman with a reversible tray top",
-            "a corner bar cabinet for home entertaining",
-            "a rocking recliner with padded arms",
-            "a folding picnic table with benches",
-            "a wall-mounted wine rack",
-            "a storage chest with decorative hardware",
-            "a standing coat rack with multiple hooks",
-            "a chair made of bamboo",
-            "an antique mahogany table",
-            "a modern minimalist sofa",
-            "a bed with a built-in bookshelf",
-            "an office chair with lumbar support",
-            "a dresser with a mirror",
-            "a wooden rocking chair",
-            "a dining table that seats eight",
-            "a futon that converts into a bed",
-            "a coffee table with storage compartments",
-            "a nightstand with a built-in lamp",
-            "a bunk bed for kids",
-            "an armchair with a footrest",
-            "a bookshelf that hangs on the wall",
-            "a desk with a hutch",
-            "a bar stool with a backrest",
-            "a patio table with an umbrella",
-            "a vanity with a stool",
-            "a sectional sofa for the living room",
-            "a loft bed with a desk underneath",
-            "a TV stand with shelves",
-            "a bedside table with a drawer",
-            "a recliner for relaxing",
-            "an ottoman with storage inside",
-            "a chaise lounge for the bedroom",
-            "a wardrobe with sliding doors",
-            "a kitchen island with a butcher block top",
-            "an adjustable height desk",
-            "a console table for the hallway",
-            "a shoe rack for the entryway",
-            "a cabinet with glass doors",
-            "a bench for the end of the bed",
-            "a chest of drawers for the bedroom",
-            "a coat rack for the foyer",
-            "a sideboard for the dining room",
-            "a bean bag chair for the game room",
-            "a sleigh bed for the master bedroom",
-            "a roll-top desk for the office",
-            "a daybed for the guest room",
-            "a crib for the nursery",
-            "a settee for the sitting room",
-            "a drafting table for the studio",
-            "a Murphy bed for the small apartment",
-            "a chifforobe for extra storage",
-            "a hope chest for keepsakes",
-            "a credenza for the office",
-            "a divan for lounging",
-            "a chesterfield sofa for the living room",
-            "a canopied porch swing",
-            "a breakfast nook table",
-            "an armoire for the bedroom",
-            "a loveseat with plush cushions",
-            "a computer desk with a keyboard tray",
-            "a folding chair for outdoor events",
-            "a gaming chair with built-in speakers",
-            "a patio set with a glass-top table",
-            "a vanity table with a tri-fold mirror",
-            "a storage bench for the hallway",
-            "an accent chair with vibrant upholstery",
-            "a corner desk for small spaces",
-            "a floating shelf for decorative items",
-            "a children's table with matching chairs",
-            "a bar cart with wheels",
-            "a papasan chair with a cozy cushion",
-            "a media console with hidden compartments",
-            "a standing desk with adjustable height",
-            "a ladder bookshelf for displaying books",
-            "a pouf ottoman for extra seating",
-            "a folding table for hosting parties",
-            "a mantel clock for the fireplace",
-            "a wall-mounted coat rack with hooks",
-            "a vanity mirror with LED lights",
-            "a pet bed with a removable cover",
-            "a wine rack with space for bottles and glasses",
-            "a corner TV stand for maximizing space",
-            "a jewelry armoire with multiple drawers",
-            "a hammock chair for outdoor relaxation",
-            "a picnic table with attached benches",
-            "a hall tree with storage compartments",
-            "a drafting stool with adjustable height",
-            "a corner shelf for displaying collectibles",
-            "a makeup vanity with a swivel mirror",
-            "a pet crate that doubles as a side table",
-            "a folding screen for room dividers",
-            "a magazine rack for organizing reading materials",
-            "an entryway table with a bottom shelf",
-            "a CD storage cabinet with glass doors",
-            "a bar table with built-in wine storage",
-            "a wood-burning fire pit for outdoor gatherings",
-            "a ladder desk with shelves",
-            "a plant stand with multiple tiers",
-            "a folding futon for versatile seating",
-            "a wall-mounted shoe rack",
-            "a corner curio cabinet for displaying collectibles",
-            "a gaming desk with RGB lighting",
-            "a wall-mounted TV shelf",
-            "a pet sofa with removable washable covers",
-            "a folding step stool for reaching high places",
-            "a floating TV stand for a sleek look",
-            "a storage ottoman with a reversible tray top",
-            "a corner bar cabinet for home entertaining",
-            "a rocking recliner with padded arms",
-            "a folding picnic table with benches",
-            "a wall-mounted wine rack",
-            "a storage chest with decorative hardware",
-            "a standing coat rack with multiple hooks",
-            "a chairmade of recycled plastic",
-            "an antique oak dining table",
-            "a velvet tufted sofa",
-            "a platform bed with built-in storage",
-            "an ergonomic office chair",
-            "a mirrored vanity table",
-            "a rattan rocking chair",
-            "a extendable dining table",
-            "a convertible sofa",
-            "a glass coffee table",
-            "a bedside table with wireless charging",
-            "a loft bed with a slide",
-            "a leather armchair",
-            "a wall-mounted bookshelf",
-            "a standing desk converter",
-            "a swivel bar stool",
-            "a folding picnic table with umbrella",
-            "a mirrored vanity with a Hollywood-style lighted mirror",
-            "a modular sectional sofa",
-            "a loft bed with a walk-in closet underneath",
-            "a TV stand with a built-in electric fireplace",
-            "a floating nightstand",
-            "a massage recliner chair",
-            "an ottoman with a built-in Bluetooth speaker",
-            "a velvet chaise lounge",
-            "a sliding door wardrobe",
-            "a marble kitchen island",
-            "an adjustable standing desk",
-            "a narrow console table",
-            "a shoe cabinet with multiple compartments",
-            "a glass display cabinet",
-            "a storage bench with shoe racks",
-            "a chest of drawers with a hidden compartment",
-            "a wall-mounted coat rack with a shelf",
-            "a buffet table for serving",
-            "a bean bag chair for gaming",
-            "a canopy bed with curtains",
-            "a secretary desk",
-            "a daybed with trundle",
-            "a convertible crib",
-            "a settee with floral upholstery",
-            "an artist's drafting table",
-            "a wall bed with a fold-out desk",
-            "a wardrobe with a built-in jewelry organizer",
-            "a vintage hope chest",
-            "a modern credenza",
-            "a velvet divan",
-            "a leather chesterfield sofa",
-            "a porch swing with a canopy",
-            "a round breakfast table",
-            "a mirrored armoire",
-            "a reclining loveseat",
-            "a corner computer desk",
-            "a folding camping chair",
-            "a gaming chair with a massage function",
-            "a patio dining set with a umbrella",
-            "a vanity set with a tri-fold mirror",
-            "a hallway storage bench",
-            "an accent chair with a geometric pattern",
-            "a floating corner desk",
-            "a wall-mounted shelf with hooks",
-            "a kids' table and chair set",
-            "a bar cart with a wine rack",
-            "a papasan chair with a fuzzy cushion",
-            "a TV console with built-in speakers",
-            "a standing desk with a built-in treadmill",
-            "a ladder-style bookshelf",
-            "a round pouf ottoman",
-            "a folding dining table",
-            "a wall clock with pendulum",
-            "a freestanding coat rack",
-            "a vanity mirror with built-in lights",
-            "a pet bed with memory foam padding",
-            "a wine rack with a stemware holder",
-            "a corner TV mount",
-            "a standing jewelry armoire",
-            "a hammock for two",
-            "a picnic table with detached benches",
-            "a hall tree with a bench",
-            "a drafting stool with a backrest",
-            "a wall-mounted corner shelf",
-            "a makeup vanity with a lighted mirror",
-            "a pet crate that resembles a side table",
-            "a folding room divider",
-            "a magazine holder with a built-in table",
-            "an entryway table with drawers",
-            "a vinyl record storage cabinet",
-            "a bar table with a built-in cooler",
-            "a propane fire pit for outdoor gatherings",
-            "a ladder desk with a built-in file cabinet",
-            "a plant stand with a geometric design",
-            "a folding futon sofa bed",
-            "a wall-mounted shoe organizer",
-            "a corner curio cabinet with glass shelves",
-            "a gaming desk with built-in RGB lighting",
-            "a wall-mounted TV stand",
-            "a pet sofa with a storage compartment",
-            "a folding step stool with a handle",
-            "a floating entertainment center",
-            "a storage ottoman with a serving tray",
-            "a corner bar unit with wine storage",
-            "a rocking recliner chair with a massage function",
-            "a folding picnic table with four seats",
-            "a wall-mounted wine bottle and glass holder",
-            "a storage chest with a vintage design",
-            "a standing coat rack with a shoe shelf",
-            "a chair made of recycled materials",
-            "a picnic table with detached benches",
-            "a hall tree with a bench",
-            "a drafting stool with a backrest",
-            "a wall-mounted corner shelf",
-            "a makeup vanity with a lighted mirror",
-            "a pet crate that resembles a side table",
-            "a folding room divider",
-            "a magazine holder with a built-in table",
-            "an entryway table with drawers",
-            "a vinyl record storage cabinet",
-            "a bar table with a built-in cooler",
-            "a propane fire pit for outdoor gatherings",
-            "a ladder desk with a built-in file cabinet",
-            "a plant stand with a geometric design",
-            "a folding futon sofa bed",
-            "a wall-mounted shoe organizer",
-            "a corner curio cabinet with glass shelves",
-            "a gaming desk with built-in RGB lighting",
-            "a wall-mounted TV stand",
-            "a pet sofa with a storage compartment",
-            "a folding step stool with a handle",
-            "a floating entertainment center",
-            "a storage ottoman with a serving tray",
-            "a corner bar unit with wine storage",
-            "a rocking recliner chair with a massage function",
-            "a folding picnic table with four seats",
-            "a wall-mounted wine bottle and glass holder",
-            "a storage chest with a vintage design",
-            "a standing coat rack with a shoe shelf",
-            "a chair made of recycled materials",
-            "a dining table with upholstered chairs",
-            "a bookshelf with adjustable shelves",
-            "a nightstand with a built-in charging station",
-            "a desk lamp with adjustable brightness",
-            "a bathroom vanity with a marble countertop",
-            "a floor lamp with a built-in shelf",
-            "a coffee table with hidden storage compartments",
-            "a garden bench with a decorative backrest",
-            "a desk organizer with multiple compartments",
-            "a wine rack with space for hanging glasses",
-            "a chaise lounge with a reclining feature",
-            "a storage cabinet with sliding doors",
-            "a ceiling fan with a remote control",
-            "a computer chair with ergonomic design",
-            "a bar stool with a swivel seat",
-            "a wall clock with oversized numbers",
-            "a coat hanger with multiple hooks",
-            "a patio umbrella with a crank mechanism",
-            "a floor mirror with a wooden frame",
-            "a shoe cabinet with mirrored doors",
-            "a desk with built-in storage drawers",
-            "a corner sofa with a pull-out bed",
-            "a wall-mounted bookcase with adjustable shelves",
-            "a kitchen island with a granite countertop",
-            "a bedside table with a built-in lamp",
-            "a folding chair with a padded seat",
-            "a storage bin with a hinged lid",
-            "a bar cart with wheels for easy mobility",
-            "a desk calendar with tear-off pages",
-            "a storage bench with a cushioned seat",
-            "a pendant light with a modern design",
-            "a display cabinet with glass doors",
-            "a wall shelf with decorative brackets",
-            "a standing desk converter with adjustable height",
-            "a storage basket with handles",
-            "a console table with a mirrored surface",
-            "a desk organizer with a charging dock",
-            "a wine cooler with temperature control",
-            "a floating shelf with a hidden compartment",
-            "a desk chair with lumbar support",
-            "a wall-mounted coat rack with shelf",
-            "a bar table with adjustable height",
-            "a storage trunk with a vintage look",
-            "a desk lamp with a flexible neck",
-            "a shoe rack with stackable tiers",
-            "a corner desk with storage shelves",
-            "a wall mirror with a decorative frame",
-            "a magazine rack with a built-in lamp",
-            "a storage cabinet with a lock",
-            "a desk with a built-in bookshelf",
-            "a bar stool with a backrest and armrests",
-            "a wall-mounted key holder with hooks",
-            "a storage shelf with fabric bins",
-            "a desk fan with multiple speed settings",
-            "a bench with a built-in storage compartment",
-            "a corner TV stand with open shelves",
-            "a desk organizer with file dividers",
-            "a wine glass rack with hanging stemware slots",
-            "a folding table with adjustable height",
-            "a wall-mounted coat hook rack",
-            "a storage cube with removable drawers",
-            "a desk lamp with a USB charging port",
-            "a shoe bench with a cushioned seat",
-            "a bar cabinet with a mirrored back",
-            "a wall-mounted mirror with built-in LED lights",
-            "a storage shelf with wire baskets",
-            "a desk with a pull-out keyboard tray",
-            "a bar table with a glass top",
-            "a storage ottoman with hidden compartments",
-            "a corner shelf with zigzag design",
-            "a wall-mounted magazine rack",
-            "a desk organizer with a pen holder",
-            "a wine rack with space for hanging glasses",
-            "a chaise lounge with a reclining feature",
-            "a storage cabinet with sliding doors",
-            "a ceiling fan with a remote control",
-            "a computer chair with ergonomic design",
-            "a bar stool with a swivel seat",
-            "a wall clock with oversized numbers",
-            "a coat hanger with multiple hooks",
-            "a patio umbrella with a crank mechanism",
-            "a floor mirror with a wooden frame",
-            "a shoe cabinet with mirrored doors",
-            "a desk with built-in storage drawers",
-            "a corner sofa with a pull-out bed",
-            "a wall-mounted bookcase with adjustable shelves",
-            "a kitchen island with a granite countertop",
-            "a bedside table with a built-in lamp",
-            "a folding chair with a padded seat",
-            "a storage bin with a hinged lid",
-            "a bar cart with wheels for easy mobility",
-            "a desk calendar with tear-off pages",
-            "a storage bench with a cushioned seat",
-            "a pendant light with a modern design",
-            "a display cabinet with glass doors",
-            "a wall shelf with decorative brackets",
-            "a standing desk converter with adjustable height",
-            "a storage basket with handles",
-            "a console table with a mirrored surface",
-            "a desk organizer with a charging dock",
-            "a wine cooler with temperature control",
-            "a floating shelf with a hidden compartment",
-            "a desk chair with lumbar support",
-            "a wall-mounted coat rack with shelf",
-            "a bar table with adjustable height",
-            "a storage trunk with a vintage look",
-            "a desk lamp with a flexible neck",
-            "a shoe rack with stackable tiers",
-            "a corner desk with storage shelves",
-            "a wall mirror with a decorative frame",
-            "a magazine rack with a built-in lamp",
-            "a storage cabinet with a lock",
-            "a desk with a built-in bookshelf",
-            "a bar stool with a backrest and armrests",
-            "a wall-mounted key holder with hooks",
-            "a storage shelf with fabric bins",
-            "a desk fan with multiple speed settings",
-            "a bench with a built-in storage compartment",
-            "a corner TV stand with open shelves",
-            "a desk organizer with file dividers",
-            "a wine glass rack with hanging stemware slots",
-            "a folding table with adjustable height",
-            "a wall-mounted coat hook rack",
-            "a storage cube with removable drawers",
-            "a desk lamp with a USB charging port",
-            "a shoe bench with a cushioned seat",
-            "a bar cabinet with a mirrored back",
-            "a wall-mounted mirror with built-in LED lights",
-            "a storage shelf with wire baskets",
-            "a desk with a pull-out keyboard tray",
-            "a bar table with a glass top",
-            "a storage ottoman with hidden compartments",
-            "a corner shelf with zigzag design",
-            "a wall-mounted magazine rack",
-            "a desk organizer with a pen holder",
-            "a wine rack with space for hanging glasses",
-            "a chaise lounge with a reclining feature",
-            "a storage cabinet with sliding doors",
-            "a ceiling fan with a remote control",
-            "a computer chair with ergonomic design",
-            "a bar stool with a swivel seat",
-            "a wall clock with oversized numbers",
-            "a coat hanger with multiple hooks",
-            "a patio umbrella with a crank mechanism",
-            "a floor mirror with a wooden frame",
-            "a shoe cabinet with mirrored doors",
-            "a desk with built-in storage drawers",
-            "a corner sofa with a pull-out bed",
-            "a wall-mounted bookcase with adjustable shelves",
-            "a kitchen island with a granite countertop",
-            "a bedside table with a built-in lamp",
-            "a folding chair with a padded seat",
-            "a storage bin with a hinged lid",
-            "a bar cart with wheels for easy mobility",
-            "a desk calendar with tear-off pages",
-            "a storage bench with a cushioned seat",
-            "a pendant light with a modern design",
-            "a display cabinet with glass doors",
-            "a wall shelf with decorative brackets",
-            "a standing desk converter with adjustable height",
-            "a storage basket with handles",
-            "a console table with a mirrored surface",
-            "a desk organizer with a charging dock",
-            "a wine cooler with temperature control",
-            "a floating shelf with a hidden compartment",
-            "a desk chair with lumbar support",
-            "a wall-mounted coat rack with shelf",
-            "a bar table with adjustable height",
-            "a storage trunk with a vintage look",
-            "a desk lamp with a flexible neck",
-            "a shoe rack with stackable tiers",
-            "a corner desk with storage shelves",
-            "a wall mirror with a decorative frame",
-            "a magazine rack with a built-in lamp"
-        ];
-        var task_id;
-        var randomPromptButton = document.getElementById('random-prompt-button');
-        var progressBarDiv = document.getElementById('progress-div');
-        var progressBar = document.getElementById('progress-bar');
-        var progressText = document.getElementById('progress-text');
-        var submitButton = document.getElementById('submit-button');
-        var pollingInterval;
-        const promptInput = document.getElementById('prompt');
+    randomPromptButton.addEventListener('click', function () {
         promptInput.value = getRandomElement(furniturePrompts);
+    });
+    document.getElementById('generateForm').addEventListener('submit', async function (event) {
+        event.preventDefault();
+        submitButton.disabled = true;
+        var prompt = document.getElementById('prompt').value;
+        var guidance = document.getElementById('guidance').value;
 
-        randomPromptButton.addEventListener('click', function () {
-            promptInput.value = getRandomElement(furniturePrompts);
-        });
-        document.getElementById('generateForm').addEventListener('submit', async function (event) {
-            event.preventDefault();
-            submitButton.disabled = true;
-            var prompt = document.getElementById('prompt').value;
-            var guidance = document.getElementById('guidance').value;
-
-            try {
-                const response = await fetch('/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        prompt: prompt,
-                        guidance_scale: guidance
-                    })
-                });
-                const data = await response.json();
-                task_id = data.task_id;
-                progressBar.value = 0
-                progressBarDiv.style.display = "block";
-                var estimatedDurationSecs = formatDuration(data.estimated_duration);
-                progressText.innerText = "Estimated Generation Duration: " + estimatedDurationSecs + " seconds";
-                progressBar.max = Math.ceil(estimatedDurationSecs)
-                var progressValue = 0;
-                pollingInterval = setInterval(function () {
-                    if (progressValue < estimatedDurationSecs) {
-                        progressValue += 1;
-                        progressBar.value = progressValue;
-
-                    }
-                    if (progressValue >= estimatedDurationSecs) {
-                        checkStatus().then(status => {
-                            if (status === "completed") {
-                                // stop polliong.
-                                clearInterval(pollingInterval);
-                                progressBar.value = progressBar.max;
-                                // hide progress bar after a second.
-                                setTimeout(function () {
-                                    progressBarDiv.style.display = "none";
-                                }, 1000)
-                                setTimeout(() => fetchPreview(task_id), timeout = 5000);
-                                var previewResultsDiv = document.getElementById('previewResults');
-                                previewResultsDiv.prepend(createDownloadButton(task_id));
-                                previewResultsDiv.prepend(createSpinner());
-                            }
-                        })
-
-                    }
-                }, 1000);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        });
-
-        async function checkStatus() {
-            try {
-                const response = await fetch(`/tasks/${task_id}/result/status`);
-                const data = await response.json();
-                return data.status;
-            } catch (error) {
-                console.error('Error:', error);
-                return "error";
-            }
-        };
-        async function fetchPreview(task_id, retries = 10, retryInterval = 1000) {
-            const previewResultsDiv = document.getElementById('previewResults');
-
-            try {
-                const response = await fetch(`/tasks/${task_id}/preview`);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const blob = await response.blob();
-                var url = URL.createObjectURL(blob);
-                var img = document.createElement('img');
-                img.src = url;
-                img.style.maxWidth = '100%'; // To ensure the image fits in the container
-                previewResultsDiv.prepend(img);
-                removeSpinners();
-                submitButton.disabled = false;
-            } catch (error) {
-                if (retries > 0) {
-                    console.log(`Fetch failed, retrying in ${retryInterval}ms...`);
-                    setTimeout(() => fetchPreview(task_id, retries - 1, retryInterval), retryInterval);
-                } else {
-                    console.error('Error:', error);
-                }
-            }
-        } function createDownloadButton(task_id) {
-            const downloadButton = document.createElement("button");
-            downloadButton.textContent = `Download task ${task_id}`;
-            downloadButton.onclick = function () {
-                var a = document.createElement('a');
-                a.href = `/tasks/${task_id}/result`;
-                a.download = `${task_id}_results.zip`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            };
-            return downloadButton;
-        }
-        function createSpinner() {
-            const spinner = document.createElement('div');
-            spinner.className = 'spinner';
-            return spinner;
-        }
-        function removeSpinners() {
-            // Get all elements with class "spinner"
-            let spinners = document.querySelectorAll('div.spinner');
-
-            // Loop through all found elements and remove them
-            spinners.forEach(function (spinner) {
-                spinner.parentNode.removeChild(spinner);
+        try {
+            const response = await fetch('/api/v1/tasks/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    guidance_scale: guidance
+                })
             });
-        }
-    </script>
-</body>
+            const data = await response.json();
+            task_id = data.task_id;
+            progressBar.value = 0
+            progressBarDiv.style.display = "block";
+            var estimatedDurationSecs = formatDuration(data.estimated_duration);
+            progressText.innerText = "Estimated Generation Duration: " + estimatedDurationSecs + " seconds";
+            progressBar.max = Math.ceil(estimatedDurationSecs)
+            var progressValue = 0;
+            pollingInterval = setInterval(function () {
+                if (progressValue < estimatedDurationSecs) {
+                    progressValue += 1;
+                    progressBar.value = progressValue;
 
-</html>
+                }
+                if (progressValue >= estimatedDurationSecs) {
+                    checkStatus().then(status => {
+                        if (status === "completed") {
+                            // stop polliong.
+                            clearInterval(pollingInterval);
+                            progressBar.value = progressBar.max;
+                            // hide progress bar after a second.
+                            setTimeout(function () {
+                                progressBarDiv.style.display = "none";
+                            }, 1000)
+                            setTimeout(() => fetchPreview(task_id), timeout = 5000);
+                            var previewResultsDiv = document.getElementById('previewResults');
+                            previewResultsDiv.prepend(createDownloadButton(task_id));
+                            previewResultsDiv.prepend(createSpinner());
+                        }
+                    })
+
+                }
+            }, 1000);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+
+    async function checkStatus() {
+        try {
+            const response = await fetch(`/api/v1/tasks/${task_id}/status`);
+            const data = await response.json();
+            return data.status;
+        } catch (error) {
+            console.error('Error:', error);
+            return "error";
+        }
+    };
+    async function fetchPreview(task_id, retries = 10, retryInterval = 1000) {
+        const previewResultsDiv = document.getElementById('previewResults');
+
+        try {
+            const response = await fetch(`/api/v1/furnitures/${task_id}/preview`);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const blob = await response.blob();
+            var url = URL.createObjectURL(blob);
+            var img = document.createElement('img');
+            img.src = url;
+            img.style.maxWidth = '100%'; // To ensure the image fits in the container
+            previewResultsDiv.prepend(img);
+            removeSpinners();
+            submitButton.disabled = false;
+        } catch (error) {
+            if (retries > 0) {
+                console.log(`Fetch failed, retrying in ${retryInterval}ms...`);
+                setTimeout(() => fetchPreview(task_id, retries - 1, retryInterval), retryInterval);
+            } else {
+                console.error('Error:', error);
+            }
+        }
+    } function createDownloadButton(task_id) {
+        const downloadButton = document.createElement("button");
+        downloadButton.textContent = `Download task ${task_id}`;
+        downloadButton.onclick = function () {
+            var a = document.createElement('a');
+            a.href = `/api/v1/furnitures/${task_id}`;
+            a.download = `${task_id}_results.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+        return downloadButton;
+    }
+    function createSpinner() {
+        const spinner = document.createElement('div');
+        spinner.className = 'spinner';
+        return spinner;
+    }
+    function removeSpinners() {
+        // Get all elements with class "spinner"
+        let spinners = document.querySelectorAll('div.spinner');
+
+        // Loop through all found elements and remove them
+        spinners.forEach(function (spinner) {
+            spinner.parentNode.removeChild(spinner);
+        });
+    }
+</script>
+{% endblock %}

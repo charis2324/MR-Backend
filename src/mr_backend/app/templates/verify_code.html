@@ -1,138 +1,41 @@
-<!DOCTYPE html>
-<html>
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MR Backend</title>
-    <link href="/static/css/styles_v2.css" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/styles_v2.css') }}" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='/favicon/apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', path='/favicon/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', path='/favicon/favicon-16x16.png') }}">
-    <link rel="manifest" href="{{ url_for('static', path='/favicon/site.webmanifest') }}">
-</head>
-
-<body>
-    <header class="header-bar">
-        <p class="greeting">Welcome, <span class="username">{{username}}</span></p>
-        <a href="/logout"><button class="logout-button">Logout</button></a>
-    </header>
-    <nav class="navbar">
-        <ul class="navbar-nav">
-            <li class="logo">
-                <a href="/" class="nav-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="1em"
-                        viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
-                        <path fill="currentColor" class="fa-primary"
-                            d="M470.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L402.7 256 265.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160zm-352 160l160-160c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L210.7 256 73.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0z" />
-                    </svg>
-                    <span span class="link-text">MR Backend</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/" class="nav-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="1em"
-                        viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
-                        <path fill="currentColor" class="fa-primary"
-                            d="M352 320c88.4 0 160-71.6 160-160c0-15.3-2.2-30.1-6.2-44.2c-3.1-10.8-16.4-13.2-24.3-5.3l-76.8 76.8c-3 3-7.1 4.7-11.3 4.7H336c-8.8 0-16-7.2-16-16V118.6c0-4.2 1.7-8.3 4.7-11.3l76.8-76.8c7.9-7.9 5.4-21.2-5.3-24.3C382.1 2.2 367.3 0 352 0C263.6 0 192 71.6 192 160c0 19.1 3.4 37.5 9.5 54.5L19.9 396.1C7.2 408.8 0 426.1 0 444.1C0 481.6 30.4 512 67.9 512c18 0 35.3-7.2 48-19.9L297.5 310.5c17 6.2 35.4 9.5 54.5 9.5zM80 408a24 24 0 1 1 0 48 24 24 0 1 1 0-48z" />
-                    </svg>
-                    <span class="link-text">Generate</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/gallery" class="nav-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="1em"
-                        viewBox="0 0 576 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
-                        <path fill="currentColor" class="fa-primary"
-                            d="M160 32c-35.3 0-64 28.7-64 64V320c0 35.3 28.7 64 64 64H512c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H160zM396 138.7l96 144c4.9 7.4 5.4 16.8 1.2 24.6S480.9 320 472 320H328 280 200c-9.2 0-17.6-5.3-21.6-13.6s-2.9-18.2 2.9-25.4l64-80c4.6-5.7 11.4-9 18.7-9s14.2 3.3 18.7 9l17.3 21.6 56-84C360.5 132 368 128 376 128s15.5 4 20 10.7zM192 128a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zM48 120c0-13.3-10.7-24-24-24S0 106.7 0 120V344c0 75.1 60.9 136 136 136H456c13.3 0 24-10.7 24-24s-10.7-24-24-24H136c-48.6 0-88-39.4-88-88V120z" />
-                    </svg>
-                    <span class="link-text">Gallery</span>
-                </a>
-
-            </li>
-            <li class="nav-item">
-                <a href="/verify_code" class="nav-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="1em"
-                        viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
-                        <path fill="currentColor" class="fa-primary"
-                            d="M336 352c97.2 0 176-78.8 176-176S433.2 0 336 0S160 78.8 160 176c0 18.7 2.9 36.8 8.3 53.7L7 391c-4.5 4.5-7 10.6-7 17v80c0 13.3 10.7 24 24 24h80c13.3 0 24-10.7 24-24V448h40c13.3 0 24-10.7 24-24V384h40c6.4 0 12.5-2.5 17-7l33.3-33.3c16.9 5.4 35 8.3 53.7 8.3zM376 96a40 40 0 1 1 0 80 40 40 0 1 1 0-80z" />
-                    </svg>
-                    <span class="link-text">Verify Code</span>
-                </a>
-
-            </li>
-            <li class="nav-item">
-                <a href="/upload_furniture" class="nav-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="1em"
-                        viewBox="0 0 640 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
-                        <path fill="currentColor" class="fa-primary"
-                            d="M144 480C64.5 480 0 415.5 0 336c0-62.8 40.2-116.2 96.2-135.9c-.1-2.7-.2-5.4-.2-8.1c0-88.4 71.6-160 160-160c59.3 0 111 32.2 138.7 80.2C409.9 102 428.3 96 448 96c53 0 96 43 96 96c0 12.2-2.3 23.8-6.4 34.6C596 238.4 640 290.1 640 352c0 70.7-57.3 128-128 128H144zm79-217c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l39-39V392c0 13.3 10.7 24 24 24s24-10.7 24-24V257.9l39 39c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-80-80c-9.4-9.4-24.6-9.4-33.9 0l-80 80z" />
-                    </svg>
-                    <span class="link-text">Upload</span>
-                </a>
-
-            </li>
-            <li class="nav-item">
-                <a href="#" class="nav-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="1em"
-                        viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
-                        <path fill="currentColor" class="fa-primary"
-                            d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z" />
-                    </svg>
-                    <div class="greeting-box">
-                        <p><strong>Welcome Back</strong></p>
-                        <p>{{username}}</p>
-                    </div>
-                </a>
-            </li>
-        </ul>
-    </nav>
-
-
-
-
-    <main>
-        <section>
-            <div class="section-div">
-                <h2>Verify Login Code</h2>
-                <input type="text" id="login-code" placeholder="Enter your code"></input>
-                <button id="verify-button">Verify</button>
-                <strong>
-                    <p id="verify-code-notice"></p>
-                </strong>
-            </div>
-        </section>
-    </main>
-    <script>
-        const loginCodeInput = document.getElementById("login-code");
-        const verifyButton = document.getElementById("verify-button");
-        const verifyCodeNotice = document.getElementById("verify-code-notice");
-        verifyButton.addEventListener('click', async () => {
-            try {
-                const response = await fetch('/login_code/verify', {
-                    method: "POST",
-                    headers: { "content-type": "application/json" },
-                    body: JSON.stringify({ login_code: loginCodeInput.value })
-                });
-                const result = await response.json();
-                if (!response.ok) {
-                    throw result;
-                }
-                verifyCodeNotice.style.color = "green";
-                verifyCodeNotice.innerText = `**Verification success!**`;
+{% extends "base.html" %}
+{% block content %}
+<section>
+    <div class="section-div">
+        <h2>Verify Login Code</h2>
+        <input type="text" id="login-code" placeholder="Enter your code"></input>
+        <button id="verify-button">Verify</button>
+        <strong>
+            <p id="verify-code-notice"></p>
+        </strong>
+    </div>
+</section>
+{% endblock %}
+{% block script %}
+<script>
+    const loginCodeInput = document.getElementById("login-code");
+    const verifyButton = document.getElementById("verify-button");
+    const verifyCodeNotice = document.getElementById("verify-code-notice");
+    verifyButton.addEventListener('click', async () => {
+        try {
+            const response = await fetch('/api/v1/auth/login-code/verify', {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ login_code: loginCodeInput.value })
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                throw result;
             }
-            catch (error) {
-                console.error(`Failed to login with code: ${error}`);
-                verifyCodeNotice.style.color = "red";
-                verifyCodeNotice.innerText = `**Verification Failed!**`;
-            }
+            verifyCodeNotice.style.color = "green";
+            verifyCodeNotice.innerText = `**Verification success!**`;
+        }
+        catch (error) {
+            console.error(`Failed to login with code: ${error}`);
+            verifyCodeNotice.style.color = "red";
+            verifyCodeNotice.innerText = `**Verification Failed!**`;
+        }
 
-        });
-    </script>
-</body>
-
-</html>
+    });
+</script>
+{% endblock %}

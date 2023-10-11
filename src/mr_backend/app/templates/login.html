@@ -5,8 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MR Backend</title>
-    <link href="/static/css/styles.css" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
+    <link href="/static/css/base_styles.css" rel="stylesheet">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='/favicon/apple-touch-icon.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', path='/favicon/favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', path='/favicon/favicon-16x16.png') }}">
@@ -59,7 +58,7 @@
         document.getElementById('login-form').addEventListener('submit', function (event) {
             event.preventDefault();
             var formData = new FormData(event.target);
-            fetch("/token", {
+            fetch("/api/v1/auth/token", {
                 method: "POST",
                 body: formData // This should be formData, not FormData
             })
@@ -84,7 +83,7 @@
         });
         document.getElementById("login-code-button").addEventListener('click', async () => {
             try {
-                const response = await fetch('/login_code');
+                const response = await fetch('/api/v1/auth/login-code');
                 const result = await response.json();
                 if (!response.ok) {
                     throw result;
@@ -107,7 +106,7 @@
         })
         document.getElementById("code-verify-button").addEventListener('click', async () => {
             try {
-                const response = await fetch('/login_code/token', {
+                const response = await fetch('/api/v1/auth/token-with-login-code', {
                     method: 'POST',
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ login_code: document.getElementById("login-code").value })
