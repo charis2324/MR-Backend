@@ -125,7 +125,7 @@
             formData.append('files', file);
         });
 
-        const response = await fetch('/furnitures/upload', {
+        const response = await fetch('/api/v1/furnitures/upload', {
             method: 'POST',
             body: formData
         });
@@ -157,7 +157,7 @@
         const uuid = modelInfo.uuid;
 
         // Call API
-        fetch(`/model_info/${uuid}`, {
+        fetch(`/api/v1/furnitures/${uuid}/info`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
