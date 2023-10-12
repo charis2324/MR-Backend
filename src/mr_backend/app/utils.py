@@ -2,6 +2,8 @@ import io
 import random
 import string
 
+import cv2
+import numpy as np
 from PIL import Image
 
 
@@ -39,9 +41,44 @@ def extract_frame_from_bytes(gif_bytes, frame_index):
         frame.seek(frame_index)
     except EOFError:
         raise ValueError(f"Frame {frame_index} not found")
-
+    frame.convert("RGBA")
     # Create a BytesIO object, save the PNG in it, get the byte array from it
     png_bytes = io.BytesIO()
     frame.save(png_bytes, "PNG")
     png_bytes.seek(0)
     return png_bytes.read()
+
+
+def extract_png_from_gif_bytes(gif_bytes, frame_index):
+    gif_file = io.BytesIO(gif_bytes)
+    frame = Image.open(gif_file)
+
+    try:
+        frame.seek(frame_index)
+    except EOFError:
+        raise ValueError(f"Frame {frame_index} not found")
+    # Create a BytesIO object, save the PNG in it, get the byte array from it
+    frame_bytes = io.BytesIO()
+    frame.save(
+        frame_bytes,
+        "PNG",
+    )
+    frame_bytes.seek(0)
+    png = Image.open(frame_bytes)
+    png_rgba = png.convert("RGBA")
+
+    return png_rgba
+
+
+def image_to_bytes(image: Image):
+    # image.save("debug.png", "PNG")
+    buffer = io.BytesIO()
+    image.save(buffer, "PNG")
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def count_transparent_pixels(image_array):
+    transparent_pixels = image_array[:, :, 3] == 0
+    count = np.count_nonzero(transparent_pixels)
+    return count

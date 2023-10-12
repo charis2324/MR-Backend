@@ -34,7 +34,7 @@ from .models import (
     TaskStatusEnum,
     UserInDB,
 )
-from .utils import extract_frame_from_bytes, get_duration_estimation
+from .utils import get_duration_estimation
 
 task_router = APIRouter(prefix="/tasks")
 
