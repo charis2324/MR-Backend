@@ -50,7 +50,7 @@ from .models import (
     UserInDB,
 )
 
-rembg_session = new_session(model_name="u2net")
+rembg_session = new_session(model_name="u2netp")
 
 
 furniture_router = APIRouter(prefix="/furnitures")
@@ -178,7 +178,7 @@ def get_furniture_preview(uuid: str, return_png: Optional[bool] = None):
                 # png = remove(png, session=rembg_session)
                 # print(png.getdata()[0])
                 # decompress_preview = image_to_bytes(png)
-                png = extract_frame_from_bytes(decompress_preview, 0)
+                png = extract_frame_from_bytes(decompress_preview, 23)
                 decompress_preview = remove(png, session=rembg_session)
                 file_type = "png"
             except:
