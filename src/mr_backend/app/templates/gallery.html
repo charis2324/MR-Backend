@@ -1,6 +1,121 @@
 {% extends "base.html" %}
+{% block css %}
+<style>
+    #model-details-modal {
+        display: none;
+        justify-content: center;
+        align-items: start;
+        /* Hidden by default */
+        position: fixed;
+        /* Stay in place */
+        z-index: 1;
+        /* Sit on top */
+        left: 5rem;
+        top: 5rem;
+        width: calc(100vw - 5rem);
+        height: calc(100vh - 5rem);
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        padding: 1rem 2rem;
+        border: 1px solid #888;
+        width: 60%;
+        height: 90%;
+        margin: 1rem auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        /* Could be more or less, depending on screen size */
+        max-width: 600px;
+        /* Maximum width, optional, adjust as needed */
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+
+    }
+
+    .modal-model-image {
+        flex-shrink: 0;
+        position: relative;
+        width: 50%;
+        height: 0;
+        padding-bottom: 50%;
+    }
+
+    .modal-model-image img {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        /* Set max-height to limit the image size */
+    }
+
+    .modal-model-details {
+        width: 90%;
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        /* Allow it to grow and shrink as needed */
+        overflow: hidden;
+    }
+
+    .modal-model-name {
+        flex-shrink: 0;
+        white-space: nowrap;
+        overflow-x: auto;
+        height: 1.6em;
+    }
+
+    .modal-model-description {
+        overflow-y: auto;
+        height: calc(100% - 2em);
+        flex: 1 1 auto;
+        padding: 0 1rem;
+        background-color: var(--bg-secondary);
+        border: 1px solid #ddd;
+        border-radius: 4px;
+
+    }
+
+    .modal-details-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    @media screen and (max-width: 600px) {
+        #model-details-modal {
+            top: 5rem;
+            left: 0;
+            width: 100%;
+            height: calc(100vh - 10rem);
+        }
+    }
+</style>
+{% endblock %}
 {% block content %}
 <section>
+    <div id="model-details-modal">
+        <!-- <div class="modal-content">
+            <div class="modal-model-image">
+                <img src=""></img>
+            </div>
+            <div class="modal-model-details">
+                <h2 class="modal-model-name">modelName</h2>
+                <p class="modal-model-description">Lorem Ipsum is simply dummy text of the printing and typesetting
+                    industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an
+                    unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived
+                    not only five centuries, but also the leap into electronic typesetting, remaining essentially
+                    unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem
+                    Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including
+                    versions of Lorem Ipsum.</p>
+                <p>by <strong>${model.username}</strong> (${model.source})</p>
+            </div>
+        </div> -->
+    </div>
     <div id="model-info-card-container"></div>
 </section>
 {% endblock %}
@@ -9,6 +124,15 @@
     const cardWidth = 250;
     const cardHeight = 380;
     const container = document.querySelector('#model-info-card-container');
+    const modal = document.querySelector('#model-details-modal')
+    document.getElementById('model-details-modal').addEventListener('click', function (event) {
+        // Check if the event.target matches the modal background
+        if (event.target.id === 'model-details-modal') {
+            console.log("Modal background clicked");
+            this.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    });
     let loadMore = true;
     let loading = false;
     let skip = 0;
@@ -16,20 +140,51 @@
     function createModelInfoCard(model) {
         let card = document.createElement('div');
         card.className = 'model-info-card';
-        let modelName = capitalizeFirstLetter(model.name);
+        //let modelName = capitalizeFirstLetter(model.name);
+        model.name = capitalizeFirstLetter(model.name);
+        console.log(model.description);
+        if (model.description == "" || model.description == null) {
+            model.description = "No description available.";
+        }
         card.innerHTML = `
                 <div class="model-image">
-                    <img src="" alt="${modelName}" />
+                    <img src="" alt="${model.name}" />
                 </div>
                 <div class="model-details">
-                    <h2>${modelName}</h2>
+                    <h2>${model.name}</h2>
                     <p>by <strong>${model.username}</strong> (${model.source})</p>
                 </div>
             `;
-
+        for (key in model) {
+            if (model.hasOwnProperty(key)) {
+                card.dataset[key] = model[key];
+            }
+        }
         let imgElement = card.querySelector('.model-image img');
         fetchImageAndUpdateCard(model.uuid, imgElement);
 
+        card.addEventListener('click', () => {
+            modal.style.display = "flex";
+            const imgElement = card.querySelector('.model-image img');
+            modal.innerHTML = `
+            <div class="modal-content">
+            <div class="modal-model-image">
+                <img src="${imgElement.src}"></img>
+            </div>
+            <div class="modal-model-details">
+                <h2 class="modal-model-name">${card.dataset["name"]}</h2>
+                <div class = "modal-model-description">
+                <p>${card.dataset["description"]}</p>
+                </div>
+                <div class="modal-details-footer">
+                    <p>by <strong>${model.username}</strong> (${model.source})</p>
+                    <button> Add to MR</button>
+                </div>
+            </div>
+        </div>
+        `
+            document.body.style.overflow = 'hidden';
+        })
         return card;
     }
 

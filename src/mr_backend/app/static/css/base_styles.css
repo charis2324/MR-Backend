@@ -25,7 +25,7 @@ body::-webkit-scrollbar {
 }
 
 body::-webkit-scrollbar-track {
-    background-color: #1e1e24;
+    background-color: #eee;
 }
 
 body::-webkit-scrollbar-thumb {
@@ -106,6 +106,10 @@ progress[value]::-moz-progress-bar {
     transition: var(--transition-speed);
 }
 
+.nav-link-custom {
+    height: 8rem;
+}
+
 .nav-link:hover {
     filter: grayscale(0%) opacity(1);
     background-color: var(--bg-secondary);
@@ -151,11 +155,30 @@ progress[value]::-moz-progress-bar {
     transform: rotate(-180deg);
 }
 
-.greeting-box p {
-    margin: 0.5rem 0 0.5rem 1rem;
+.greeting-box {
+    display: flex;
+    flex-direction: column;
+    margin-left: 1rem;
+}
+
+.user-name-with-logout {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-name-with-logout p {
+    width: 7rem;
+    overflow: hidden;
+    font-size: 0.9em;
+}
+
+.user-name-with-logout a {
+    padding-left: 1rem;
 }
 
 @media only screen and (max-width: 600px) {
+
     .navbar {
         bottom: 0;
         width: 100vw;
@@ -188,6 +211,14 @@ progress[value]::-moz-progress-bar {
 }
 
 @media only screen and (min-width: 600px) {
+    #header-greeting {
+        display: none;
+    }
+
+    #header-logout-btn {
+        display: none;
+    }
+
     .navbar {
         top: 0;
         width: 5rem;
@@ -202,6 +233,10 @@ progress[value]::-moz-progress-bar {
         display: block;
     }
 
+}
+
+#logout-trigger {
+    display: none;
 }
 
 /* /////////////////////////////////////////////////////////////// */
@@ -224,6 +259,8 @@ progress[value]::-moz-progress-bar {
 .greeting {
     margin: 0;
     font-size: 1.5rem;
+    max-width: 60%;
+    overflow: hidden;
 }
 
 .username {
