@@ -1,0 +1,41 @@
+{
+    "version": 1,
+    "handlers": {
+        "default": {
+            "class": "logging.StreamHandler",
+            "formatter": "default",
+            "stream": "ext://sys.stdout"
+        }
+    },
+    "root": {
+        "handlers": [
+            "default"
+        ],
+        "level": "INFO"
+    },
+    "formatters": {
+        "default": {
+            "format": "%(asctime)s - %(levelname)s - %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S"
+        },
+        "access": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(client_addr)s - \"%(request_line)s\" %(status_code)s %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S"
+        }
+    },
+    "loggers": {
+        "uvicorn.error": {
+            "handlers": [
+                "default"
+            ],
+            "level": "INFO"
+        },
+        "uvicorn.access": {
+            "handlers": [
+                "default"
+            ],
+            "level": "INFO",
+            "propagate": true
+        }
+    }
+}

@@ -2,13 +2,12 @@ import os
 from threading import Thread
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from mr_backend.database.db_manager import db_startup
 from mr_backend.model_preview.render_preview import preview_generation_thread
 from mr_backend.shape_inference.inference_server import inference_thread
 from mr_backend.state import inference_thread_ready
@@ -16,7 +15,6 @@ from mr_backend.state import inference_thread_ready
 from .auth import (
     UnauthorizedRedirectException,
     auth_router,
-    get_current_user,
     get_current_user_update_token_or_redirect,
     update_token_cookie,
 )

@@ -1,29 +1,20 @@
 import io
-import math
 import tempfile
 from gzip import decompress
 from pathlib import Path
 from typing import Annotated, List, Optional
 from uuid import uuid4
 
-import imageio
 import trimesh
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from fastapi.responses import StreamingResponse
-from icecream import ic
 from rembg import new_session, remove
 
 from mr_backend.app.auth import get_current_user
-from mr_backend.app.utils import (
-    count_transparent_pixels,
-    extract_frame_from_bytes,
-    extract_png_from_gif_bytes,
-    image_to_bytes,
-)
+from mr_backend.app.utils import extract_frame_from_bytes
 from mr_backend.database.db_manager import (
     create_model_info,
     create_model_preview,
-    get_model_info_by_user,
     get_model_info_by_uuid,
     get_model_preview_status,
     get_models_info,
@@ -33,12 +24,7 @@ from mr_backend.database.db_manager import (
     store_trimesh,
     update_model_info_by_uuid,
 )
-from mr_backend.model_preview.offscreen_renderer import render_preview
-from mr_backend.shape_inference.clean_mesh import (
-    merge_geometry,
-    rotate_all_geometries,
-    rotate_mesh,
-)
+from mr_backend.shape_inference.clean_mesh import merge_geometry, rotate_all_geometries
 from mr_backend.shape_inference.inference_server import export_trimesh_to_obj_str
 
 from .models import (

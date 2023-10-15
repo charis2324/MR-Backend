@@ -1,19 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import APIRouter, Depends
 
 from mr_backend.app.auth import get_current_user
-from mr_backend.database.db_manager import create_user, get_model_info_by_user
+from mr_backend.database.db_manager import get_model_info_by_user
 
-from .models import (
-    FurnitureInfoBase,
-    FurnitureInfos,
-    UserCreate,
-    UserInDB,
-    UserInfoResponse,
-)
-from .security import get_password_hash
+from .models import FurnitureInfoBase, FurnitureInfos, UserInDB, UserInfoResponse
 
 user_router = APIRouter()
 
