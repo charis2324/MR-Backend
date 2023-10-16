@@ -380,6 +380,10 @@ button:hover {
 }
 
 /* //////////////////////////////////// */
+#preview {
+    margin-bottom: 5rem;
+}
+
 #previewResults img {
     display: block;
     margin-top: 20px;
