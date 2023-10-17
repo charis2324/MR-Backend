@@ -22,5 +22,5 @@ class ControllerEvent(ABC):
 
 @dataclass
 class ImportFurnitureEvent(ControllerEvent):
-    event: str = "importModel"
+    event: str = "importFurniture"
     furniture_uuid: str = None
