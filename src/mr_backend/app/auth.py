@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security.utils import get_authorization_scheme_param
 
 from mr_backend.database.db_manager import (
     add_login_code,
@@ -83,11 +84,36 @@ def validate_and_get_refresh_token(token: str, creds_exception: HTTPException) -
     return {"user": user_in_db, "new_token": new_token}
 
 
-def get_current_user(
-    token: Optional[Annotated[str, Depends(oauth2_scheme)]] = Cookie(
-        None, alias="access_token"
-    )
-) -> dict:
+# def get_current_user(
+#     token: Optional[Annotated[str, Depends(oauth2_scheme)]] = Cookie(
+#         None, alias="access_token"
+#     )
+# ) -> dict:
+#     credentials_exception = HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": "Bearer"},
+#     )
+#     print(f"get_current_user token: {token}")
+#     userId, _ = validate_token(token, credentials_exception)
+#     return userId
+async def get_token_from_header_or_cookie(request: Request) -> str:
+    authorization: str = request.headers.get("Authorization")
+    scheme, param = get_authorization_scheme_param(authorization)
+    if scheme.lower() == "bearer":
+        return param
+    elif "access_token" in request.cookies:
+        return request.cookies.get("access_token")
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+def get_current_user(token: str = Depends(get_token_from_header_or_cookie)) -> dict:
+    print(f"get_current_user token: {token}")
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

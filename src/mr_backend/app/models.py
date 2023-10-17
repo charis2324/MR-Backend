@@ -100,3 +100,7 @@ class ModelInfoUpdate(BaseModel):
     scale_x: float
     scale_y: float
     scale_z: float
+
+
+class ImportFurnitureEventRequest(BaseModel):
+    uuid: str

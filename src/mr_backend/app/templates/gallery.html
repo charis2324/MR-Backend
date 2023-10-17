@@ -137,6 +137,23 @@
     let loading = false;
     let skip = 0;
     let limit = Math.floor(window.innerWidth / cardWidth);
+    async function importToMR(uuid) {
+        let response = await fetch('/api/v1/controller/event/import-furniture', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "uuid": uuid
+            })
+        });
+        if (response.ok) {
+            console.log("Imported to MR");
+        } else {
+            let error = await response.json();
+            console.error(error);
+        }
+    }
     function createModelInfoCard(model) {
         let card = document.createElement('div');
         card.className = 'model-info-card';
@@ -164,6 +181,7 @@
         fetchImageAndUpdateCard(model.uuid, imgElement);
 
         card.addEventListener('click', () => {
+
             modal.style.display = "flex";
             const imgElement = card.querySelector('.model-image img');
             modal.innerHTML = `
@@ -178,13 +196,13 @@
                 </div>
                 <div class="modal-details-footer">
                     <p>by <strong>${model.username}</strong> (${model.source})</p>
-                    <button> Add to MR</button>
+                    <button onclick="importToMR(\'${model.uuid}\')"> Import to MR</button>
                 </div>
             </div>
         </div>
         `
             document.body.style.overflow = 'hidden';
-        })
+        });
         return card;
     }
 

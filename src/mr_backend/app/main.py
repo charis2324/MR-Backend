@@ -18,6 +18,7 @@ from .auth import (
     get_current_user_update_token_or_redirect,
     update_token_cookie,
 )
+from .controller import controller_router
 from .furniture import furniture_router
 from .models import UserInDB
 from .tasks import task_router
@@ -37,7 +38,7 @@ api_v1_router.include_router(auth_router)
 api_v1_router.include_router(task_router)
 api_v1_router.include_router(user_router)
 api_v1_router.include_router(furniture_router)
-
+api_v1_router.include_router(controller_router)
 app.include_router(api_v1_router)
 
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
