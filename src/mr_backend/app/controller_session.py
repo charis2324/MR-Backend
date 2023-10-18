@@ -22,7 +22,6 @@ HEART_BEAT_RATE_IN_SECONDS = 20
 class ControllerSession:
     uuid: str
     event_queue: asyncio.Queue
-    last_event_time: datetime
     active: bool
     deactivate_scheduler: BackgroundScheduler
 
