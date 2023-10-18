@@ -360,9 +360,9 @@ button:hover {
 
 .upload-preview {
     position: relative;
-    width: 400px;
+    max-width: 400px;
     height: 0;
-    padding-bottom: 400px;
+    padding-bottom: min(400px, 100%);
 }
 
 .model-info-card img {
@@ -382,6 +382,11 @@ button:hover {
 /* //////////////////////////////////// */
 #preview {
     margin-bottom: 5rem;
+}
+
+#upload-preview {
+    margin-bottom: 5rem;
+    width: 100%;
 }
 
 #previewResults img {
