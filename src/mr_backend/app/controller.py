@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 
 from mr_backend.app.auth import get_current_user
 from mr_backend.app.controller_event import ImportFurnitureEvent
+from mr_backend.app.controller_session import ControllerSession
 from mr_backend.app.models import ImportFurnitureEventRequest, UserInDB
 
 error_logger = logging.getLogger("uvicorn.error")
@@ -47,11 +48,12 @@ async def send_controller_events(
 ):
     current_user_uuid = current_user.uuid
     if current_user_uuid not in controller_sessions:
-        controller_sessions[current_user_uuid] = asyncio.Queue()
+        controller_sessions[current_user_uuid] = ControllerSession(current_user_uuid)
     error_logger.info(f"Sessions: {controller_sessions}")
     try:
         return StreamingResponse(
-            controller_event_generator(controller_sessions[current_user_uuid]),
+            # controller_event_generator(controller_sessions[current_user_uuid]),
+            controller_sessions[current_user_uuid].event_iterator(),
             media_type="text/event-stream",
             # background=clear_user_event_session(current_user_uuid),
         )
@@ -69,7 +71,8 @@ def add_import_furniture_events(
     error_logger.info(f"Sessions: {controller_sessions}")
     if current_user_uuid not in controller_sessions:
         raise HTTPException(status_code=400, detail="User not connected controller")
-
+    if not controller_sessions[current_user_uuid].active:
+        raise HTTPException(status_code=400, detail="User not connected controller")
     furniture_uuid = importFurnitureEvent.uuid
     event = ImportFurnitureEvent(furniture_uuid=furniture_uuid)
     controller_sessions[current_user_uuid].put_nowait(event)

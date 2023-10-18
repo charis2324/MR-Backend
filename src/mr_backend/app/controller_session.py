@@ -31,6 +31,8 @@ class ControllerSession:
         uuid: str,
         background_scheduler: BackgroundScheduler = event_session_scheduler,
     ):
+        if background_scheduler is None:
+            raise ValueError("background_scheduler cannot be None")
         self.uuid = uuid
         self.active = True
         self.event_queue = asyncio.Queue()
