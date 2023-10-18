@@ -42,7 +42,7 @@ class ControllerSession:
     def _set_deactivate_job(self):
         if self.deactivate_scheduler.get_job(self.deactivate_job):
             self.deactivate_scheduler.remove_job(self.deactivate_job)
-        self.deactivate_job = self.event_scheduler.add_job(
+        self.deactivate_job = self.deactivate_scheduler.add_job(
             self.deactivate,
             "date",
             run_date=datetime.now() + timedelta(seconds=HEART_BEAT_RATE_IN_SECONDS),
