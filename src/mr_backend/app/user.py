@@ -23,9 +23,9 @@ def get_self_info(
 
 @user_router.get("/users/{user_uuid}/furnitures/info")
 def read_user_furnitures_info(user_uuid: str):
-    user_model_info = get_model_info_by_user(user_uuid)
+    user_model_info, username = get_model_info_by_user(user_uuid)
     model_info_bases = [
-        FurnitureInfoBase(**{**info.__dict__, "username": ""})
+        FurnitureInfoBase(**{**info.__dict__, "username": username})
         for info in user_model_info
     ]
     return FurnitureInfos(

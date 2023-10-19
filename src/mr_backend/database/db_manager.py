@@ -150,8 +150,9 @@ def check_and_schedule_codes(session):
 def get_model_info_by_user(user_uuid: str) -> List[ModelInfo]:
     db = SessionLocal()
     model_info = db.query(ModelInfo).filter(ModelInfo.user_uuid == user_uuid).all()
+    username = db.query(User.username).filter(User.uuid == user_uuid).one()[0]
     db.close()
-    return model_info
+    return model_info, username
 
 
 def get_username_if_active(code: str):
