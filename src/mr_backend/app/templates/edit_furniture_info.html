@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block css %}
+{% endblock %}
+{% block content %}
+<section id="info-section">
+    <h2>Furniture Info</h2>
+    <div class="upload-preview">
+        <img id="upload-preview"></img>
+    </div>
+    <form id="update-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name">
+
+        <label for="description">Description:</label>
+        <textarea id="description" name="description"></textarea>
+
+        <label for="scale_type">Scale Type:</label>
+        <input type="number" id="scale_type" name="scale_type" min="1" max="3" value="1">
+        <label for="scale_x">Scale X:</label>
+        <input type="number" id="scale_x" name="scale_x" step="0.01" min="0.01" value="1">
+
+        <label for="scale_y">Scale Y:</label>
+        <input type="number" id="scale_y" name="scale_y" step="0.01" min="0.01" value="1">
+
+        <label for="scale_z">Scale Z:</label>
+        <input type="number" id="scale_z" name="scale_z" step="0.01" min="0.01" value="1">
+
+        <button type="submit">Update Info</button>
+    </form>
+</section>
+{% endblock %}
+{% block script %}
+<script>
+    let isImageFetched = false;
+    const furnitureUuid = "{{furniture_uuid}}";
+    const updateForm = document.getElementById('update-form');
+    const preview = document.getElementById('upload-preview');
+    function fillFormWithModelInfo(modelInfo) {
+        document.getElementById('name').value = modelInfo.name;
+        document.getElementById('description').value = modelInfo.description || '';
+        document.getElementById('scale_type').value = modelInfo.scale_type;
+        document.getElementById('scale_x').value = modelInfo.scale_x || 1;
+        document.getElementById('scale_y').value = modelInfo.scale_y || 1;
+        document.getElementById('scale_z').value = modelInfo.scale_z || 1;
+    }
+    async function fetchPreview(uuid, retries = 10, retryInterval = 1000) {
+        if (isImageFetched) return;
+
+        try {
+            const response = await fetch(`/api/v1/furnitures/${uuid}/preview`);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const blob = await response.blob();
+            var url = URL.createObjectURL(blob);
+
+            preview.src = url;
+            preview.style.maxWidth = '100%'; // To ensure the image fits in the container
+            isImageFetched = true;
+        } catch (error) {
+            if (retries > 0) {
+                console.log(`Fetch failed, retrying in ${retryInterval}ms...`);
+                setTimeout(() => fetchPreview(uuid, retries - 1, retryInterval), retryInterval);
+            } else {
+                console.error('Error:', error);
+            }
+        }
+    }
+    async function fetchFurnitureInfo(uuid) {
+        const response = await fetch(`/api/v1/furnitures/${uuid}/info`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const furnitureInfoBase = await response.json();
+        return furnitureInfoBase;
+    }
+    (async function () {
+        const furnitureInfo = await fetchFurnitureInfo(furnitureUuid);
+        fillFormWithModelInfo(furnitureInfo);
+        updateForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Get form data
+            const formData = new FormData(updateForm);
+
+            // Convert form data to JSON
+            const jsonData = {};
+            for (let [key, value] of formData.entries()) {
+                jsonData[key] = value;
+            }
+
+            // Get UUID
+            const uuid = furnitureUuid;
+
+            // Call API
+            fetch(`/api/v1/furnitures/${uuid}/info`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Include your authentication headers like tokens etc. here
+                },
+                body: JSON.stringify(jsonData),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Handle the response data here
+                    console.log(data);
+                    alert('Update successful!');
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('Update failed!');
+                });
+        });
+        fetchPreview(furnitureUuid);
+    })();
+
+</script>
+{% endblock %}

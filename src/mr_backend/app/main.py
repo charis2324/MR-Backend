@@ -156,3 +156,26 @@ async def read_items(
     if current_user_and_token["new_token"]:
         update_token_cookie(response, current_user_and_token["new_token"])
     return response
+
+
+@app.get("/edit_furniture_info/{furniture_uuid}", response_class=HTMLResponse)
+async def read_items(
+    furniture_uuid: str,
+    request: Request,
+    current_user_and_token: Annotated[
+        UserInDB, Depends(get_current_user_update_token_or_redirect)
+    ],
+):
+    print(f"edit_furniture_info/{furniture_uuid}")
+    response = templates.TemplateResponse(
+        "edit_furniture_info.html",
+        {
+            "request": request,
+            "username": current_user_and_token["user"].username,
+            "user_uuid": current_user_and_token["user"].uuid,
+            "furniture_uuid": furniture_uuid,
+        },
+    )
+    if current_user_and_token["new_token"]:
+        update_token_cookie(response, current_user_and_token["new_token"])
+    return response
