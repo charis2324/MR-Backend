@@ -136,3 +136,23 @@ async def read_items(
 @app.get("/_test", response_class=HTMLResponse)
 async def read_items(request: Request):
     return templates.TemplateResponse("_test.html", {"request": request})
+
+
+@app.get("/my_furniture", response_class=HTMLResponse)
+async def read_items(
+    request: Request,
+    current_user_and_token: Annotated[
+        UserInDB, Depends(get_current_user_update_token_or_redirect)
+    ],
+):
+    response = templates.TemplateResponse(
+        "my_furniture.html",
+        {
+            "request": request,
+            "username": current_user_and_token["user"].username,
+            "user_uuid": current_user_and_token["user"].uuid,
+        },
+    )
+    if current_user_and_token["new_token"]:
+        update_token_cookie(response, current_user_and_token["new_token"])
+    return response

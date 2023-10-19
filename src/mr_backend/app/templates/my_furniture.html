@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block css %}
+<style>
+    #model-details-modal {
+        display: none;
+        justify-content: center;
+        align-items: start;
+        /* Hidden by default */
+        position: fixed;
+        /* Stay in place */
+        z-index: 1;
+        /* Sit on top */
+        left: 5rem;
+        top: 5rem;
+        width: calc(100vw - 5rem);
+        height: calc(100vh - 5rem);
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        padding: 1rem 2rem;
+        border: 1px solid #888;
+        width: 60%;
+        height: 90%;
+        margin: 1rem auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        /* Could be more or less, depending on screen size */
+        max-width: 600px;
+        /* Maximum width, optional, adjust as needed */
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+
+    }
+
+    .modal-model-image {
+        flex-shrink: 0;
+        position: relative;
+        width: 50%;
+        height: 0;
+        padding-bottom: 50%;
+    }
+
+    .modal-model-image img {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        /* Set max-height to limit the image size */
+    }
+
+    .modal-model-details {
+        width: 90%;
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        /* Allow it to grow and shrink as needed */
+        overflow: hidden;
+    }
+
+    .modal-model-name {
+        flex-shrink: 0;
+        white-space: nowrap;
+        overflow-x: auto;
+        height: 1.6em;
+    }
+
+    .modal-model-description {
+        overflow-y: auto;
+        height: calc(100% - 2em);
+        flex: 1 1 auto;
+        padding: 0 1rem;
+        background-color: var(--bg-secondary);
+        border: 1px solid #ddd;
+        border-radius: 4px;
+
+    }
+
+    .modal-details-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    @media screen and (max-width: 600px) {
+        #model-details-modal {
+            top: 5rem;
+            left: 0;
+            width: 100%;
+            height: calc(100vh - 10rem);
+        }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<section>
+    <div id="model-details-modal">
+    </div>
+    <div id="model-info-card-container"></div>
+</section>
+{% endblock %}
+{% block script %}
+<script>
+    const user_uuid = "{{ user_uuid }}";
+    const cardWidth = 250;
+    const cardHeight = 380;
+    const container = document.querySelector('#model-info-card-container');
+    const modal = document.querySelector('#model-details-modal')
+    document.getElementById('model-details-modal').addEventListener('click', function (event) {
+        // Check if the event.target matches the modal background
+        if (event.target.id === 'model-details-modal') {
+            console.log("Modal background clicked");
+            this.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    });
+    let loadMore = true;
+    let loading = false;
+    let skip = 0;
+    let limit = Math.floor(window.innerWidth / cardWidth);
+    async function importToMR(uuid) {
+        let response = await fetch('/api/v1/controller/event/import-furniture', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "uuid": uuid
+            })
+        });
+        if (response.ok) {
+            console.log("Imported to MR");
+        } else {
+            let error = await response.json();
+            console.error(error);
+        }
+    }
+    function createModelInfoCard(model) {
+        let card = document.createElement('div');
+        card.className = 'model-info-card';
+        //let modelName = capitalizeFirstLetter(model.name);
+        model.name = capitalizeFirstLetter(model.name);
+        console.log(model.description);
+        if (model.description == "" || model.description == null) {
+            model.description = "No description available.";
+        }
+        card.innerHTML = `
+                <div class="model-image">
+                    <img src="" alt="${model.name}" />
+                </div>
+                <div class="model-details">
+                    <h2>${model.name}</h2>
+                    <p>by <strong>${model.username}</strong> (${model.source})</p>
+                </div>
+            `;
+        for (key in model) {
+            if (model.hasOwnProperty(key)) {
+                card.dataset[key] = model[key];
+            }
+        }
+        let imgElement = card.querySelector('.model-image img');
+        fetchImageAndUpdateCard(model.uuid, imgElement);
+
+        card.addEventListener('click', () => {
+
+            modal.style.display = "flex";
+            const imgElement = card.querySelector('.model-image img');
+            modal.innerHTML = `
+            <div class="modal-content">
+            <div class="modal-model-image">
+                <img src="${imgElement.src}"></img>
+            </div>
+            <div class="modal-model-details">
+                <h2 class="modal-model-name">${card.dataset["name"]}</h2>
+                <div class = "modal-model-description">
+                <p>${card.dataset["description"]}</p>
+                </div>
+                <div class="modal-details-footer">
+                    <p>by <strong>${model.username}</strong> (${model.source})</p>
+                    <button onclick="importToMR(\'${model.uuid}\')"> Import to MR</button>
+                </div>
+            </div>
+        </div>
+        `
+            document.body.style.overflow = 'hidden';
+        });
+        return card;
+    }
+
+    async function fetchImageAndUpdateCard(uuid, imgElement) {
+
+        let response = await fetch(`/api/v1/furnitures/${uuid}/preview`);
+        let data = await response.blob();
+        let imageUrl = URL.createObjectURL(data);
+
+        imgElement.src = imageUrl;
+    }
+    function capitalizeFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    async function fetchFurnitureInfo() {
+
+        const response = await fetch(`/api/v1/users/${user_uuid}/furnitures/info`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const furnitureInfos = await response.json();
+        return furnitureInfos;
+    }
+
+
+    async function fetchAndDisplayFurnitureInfo() {
+        try {
+            loading = true;
+            const data = await fetchFurnitureInfo(skip, limit);
+            const infoLength = data.furniture_infos.length;
+            skip += infoLength;
+            if (infoLength === 0) {
+                return false; // Return false if no data was fetched
+            }
+            data.furniture_infos.forEach(furnitureInfo => {
+                let card = createModelInfoCard(furnitureInfo);
+                container.appendChild(card);
+            });
+            loading = false;
+            return true; // Return true if data was fetched and displayed
+        } catch (error) {
+            loading = false;
+            console.log('There was an error!', error);
+            return false; // Return false in case of an error
+        }
+    }
+    async function fillPage() {
+        // Fetch and display furniture info until the page height is greater than the viewport height
+        while (container.offsetHeight < window.innerHeight) {
+            loadMore = await fetchAndDisplayFurnitureInfo();
+            if (!loadMore) {
+                break; // Break the loop if fetchAndDisplayFurnitureInfo returned false
+            }
+        }
+    }
+
+    // fillPage();
+    // window.addEventListener('scroll', async () => {
+    //     // Check if the scroll has reached near the bottom of the page
+    //     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && loadMore && !loading) {
+    //         // Fetch and display more furniture info
+    //         loadMore = await fetchAndDisplayFurnitureInfo();
+    //     }
+    // });
+    fetchAndDisplayFurnitureInfo();
+</script>
+{% endblock %}
