@@ -71,6 +71,9 @@ def get_new_token_if_about_to_expire(
 ) -> Optional[str]:
     # Check if the token is about to expire
     if datetime.utcnow() + timedelta(minutes=60) > expiration_datetime:
+        print("Token is about to expire")
+        print(f"User: {user}")
+        print(f" {type(user)}")
         # If the token is about to expire, create a new token
         new_token = create_access_token({"sub": user["username"]})
         return new_token
@@ -78,7 +81,10 @@ def get_new_token_if_about_to_expire(
 
 
 def validate_and_get_refresh_token(token: str, creds_exception: HTTPException) -> dict:
+    print(f"validate_and_get_refresh_token token: {token}")
     user_in_db, expiration_datetime = validate_token(token, creds_exception)
+    print(f"user_in_db: {user_in_db}")
+    print(f"expiration_datetime: {expiration_datetime}")
     new_token = get_new_token_if_about_to_expire(user_in_db, expiration_datetime)
 
     return {"user": user_in_db, "new_token": new_token}

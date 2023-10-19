@@ -69,11 +69,11 @@ def add_import_furniture_events(
     current_user_uuid = current_user.uuid
     error_logger.info(f"User {current_user_uuid} tries to add import furniture event")
     error_logger.info(f"Sessions: {controller_sessions}")
-    if current_user_uuid not in controller_sessions:
+    if controller_sessions.get(current_user_uuid, None) is None:
         raise HTTPException(status_code=400, detail="User not connected controller")
     if not controller_sessions[current_user_uuid].active:
         raise HTTPException(status_code=400, detail="User not connected controller")
     furniture_uuid = importFurnitureEvent.uuid
     event = ImportFurnitureEvent(furniture_uuid=furniture_uuid)
-    controller_sessions[current_user_uuid].put_nowait(event)
+    controller_sessions[current_user_uuid].add_event(event)
     return {"detail": "Event added to queue"}

@@ -6,7 +6,7 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from mr_backend.app.controller_event import ControllerEvent
 
@@ -14,8 +14,8 @@ error_logger = logging.getLogger("uvicorn.error")
 
 logging.basicConfig()  # Initialize logging
 logging.getLogger("apscheduler").setLevel(logging.DEBUG)
-event_session_scheduler = BackgroundScheduler()
-
+event_session_scheduler = AsyncIOScheduler()
+event_session_scheduler.start()
 HEART_BEAT_RATE_IN_SECONDS = 20
 
 
@@ -23,12 +23,12 @@ class ControllerSession:
     uuid: str
     event_queue: asyncio.Queue
     active: bool
-    deactivate_scheduler: BackgroundScheduler
+    deactivate_scheduler: AsyncIOScheduler
 
     def __init__(
         self,
         uuid: str,
-        background_scheduler: BackgroundScheduler = event_session_scheduler,
+        background_scheduler: AsyncIOScheduler = event_session_scheduler,
     ):
         if background_scheduler is None:
             raise ValueError("background_scheduler cannot be None")
@@ -36,15 +36,22 @@ class ControllerSession:
         self.active = True
         self.event_queue = asyncio.Queue()
         self.deactivate_scheduler = background_scheduler
+        self.deactivate_job = None
         self._set_deactivate_job()
 
     def _set_deactivate_job(self):
-        if self.deactivate_scheduler.get_job(self.deactivate_job):
-            self.deactivate_scheduler.remove_job(self.deactivate_job)
+        if self.deactivate_job is not None and self.deactivate_scheduler.get_job(
+            self.deactivate_job.id
+        ):
+            self.deactivate_scheduler.remove_job(self.deactivate_job.id)
+
         self.deactivate_job = self.deactivate_scheduler.add_job(
             self.deactivate,
             "date",
-            run_date=datetime.now() + timedelta(seconds=HEART_BEAT_RATE_IN_SECONDS),
+            run_date=datetime.now() + timedelta(seconds=HEART_BEAT_RATE_IN_SECONDS + 5),
+        )
+        error_logger.info(
+            f"Session:{self.uuid} Deactivate job set job: {self.deactivate_job}"
         )
 
     def deactivate(self):
@@ -57,8 +64,13 @@ class ControllerSession:
     async def event_iterator(self):
         while True:
             try:
+                if not self.active:
+                    error_logger.info(f"Session:{self.uuid} Event generator stopped")
+                    break
                 # event is a controller event object
-                event = await asyncio.wait_for(self.event_queue.get(), timeout=30)
+                event = await asyncio.wait_for(
+                    self.event_queue.get(), timeout=HEART_BEAT_RATE_IN_SECONDS
+                )
                 yield str(event)
                 error_logger.info(f"Session:{self.uuid} Event sent: {event}")
                 self._set_deactivate_job()
