@@ -47,9 +47,13 @@ async def send_controller_events(
     current_user: Annotated[UserInDB, Depends(get_current_user)]
 ):
     current_user_uuid = current_user.uuid
-    if current_user_uuid not in controller_sessions:
-        controller_sessions[current_user_uuid] = ControllerSession(current_user_uuid)
     error_logger.info(f"Sessions: {controller_sessions}")
+    if controller_sessions.get(current_user_uuid, None) is None:
+        controller_sessions[current_user_uuid] = ControllerSession(current_user_uuid)
+        error_logger.info(f"New session created for user {current_user_uuid}")
+    else:
+        controller_sessions[current_user_uuid].active = True
+        error_logger.info(f"Session {current_user_uuid} reactivated")
     try:
         return StreamingResponse(
             # controller_event_generator(controller_sessions[current_user_uuid]),

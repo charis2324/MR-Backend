@@ -64,6 +64,7 @@ class ControllerSession:
     async def event_iterator(self):
         while True:
             try:
+                error_logger.info(f"Session:{self.uuid} Event generator new iteration")
                 if not self.active:
                     error_logger.info(f"Session:{self.uuid} Event generator stopped")
                     break
