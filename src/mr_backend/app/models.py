@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field, constr
 
@@ -104,3 +104,15 @@ class ModelInfoUpdate(BaseModel):
 
 class ImportFurnitureEventRequest(BaseModel):
     uuid: str
+
+
+class PollingControllerEventModel(BaseModel):
+    event_name: str
+
+
+class PollingImportFurnitureEventModel(PollingControllerEventModel):
+    furniture_uuid: str
+
+
+class EventPollingResponse(BaseModel):
+    events: List[Union[PollingImportFurnitureEventModel, PollingControllerEventModel]]

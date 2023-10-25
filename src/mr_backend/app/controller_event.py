@@ -8,7 +8,7 @@ from json import dumps
 # data: {"userId": 123, "username": "jdoe", "email": "jdoe@example.com"}
 # \n\n
 @dataclass
-class ControllerEvent(ABC):
+class SSEControllerEvent(ABC):
     event: str
 
     def __str__(self):
@@ -21,6 +21,24 @@ class ControllerEvent(ABC):
 
 
 @dataclass
-class ImportFurnitureEvent(ControllerEvent):
+class SSEImportFurnitureEvent(SSEControllerEvent):
     event: str = "importFurniture"
+    furniture_uuid: str = None
+
+
+@dataclass
+class PollingControllerEvent(ABC):
+    event_name: str
+
+    def data_as_json(self):
+        data = asdict(self)
+        return dumps(data)
+
+    def data_as_dict(self):
+        return asdict(self)
+
+
+@dataclass
+class PollingImportFurnitureEvent(PollingControllerEvent):
+    event_name: str = "importFurniture"
     furniture_uuid: str = None
