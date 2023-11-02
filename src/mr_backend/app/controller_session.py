@@ -120,8 +120,10 @@ class PollingControllerSession:
     def _set_deactive_job(self):
         if self.deactivate_job is not None:
             error_logger.info("Removing deactivate job")
-            self.deactivate_job.remove()
-
+            try:
+                self.deactivate_job.remove()
+            except:
+                error_logger.info("Deactivate job already removed")
         self.deactivate_job = self.background_scheduler.add_job(
             self.deactivate,
             "date",
