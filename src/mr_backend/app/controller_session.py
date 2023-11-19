@@ -158,3 +158,8 @@ class PollingControllerSession:
                 break
         self._set_deactive_job()
         return events
+
+
+class SharedPollingControllerSessions:
+    def __init__(self) -> None:
+        self.sessions = dict()

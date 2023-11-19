@@ -12,6 +12,7 @@ from mr_backend.app.controller_event import (
 )
 from mr_backend.app.controller_session import (
     PollingControllerSession,
+    SharedPollingControllerSessions,
     SSEControllerSession,
 )
 from mr_backend.app.models import (
@@ -24,7 +25,7 @@ error_logger = logging.getLogger("uvicorn.error")
 
 # sse_controller_sessions = {}
 
-polling_controller_sessions = {}
+polling_controller_sessions = SharedPollingControllerSessions()
 
 controller_router = APIRouter(prefix="/controller")
 
@@ -87,14 +88,14 @@ def add_import_furniture_events(
 ):
     current_user_uuid = current_user.uuid
     error_logger.info(f"User {current_user_uuid} tries to add import furniture event")
-    error_logger.info(f"Sessions: {polling_controller_sessions}")
-    if polling_controller_sessions.get(current_user_uuid, None) is None:
+    error_logger.info(f"Sessions: {polling_controller_sessions.sessions}")
+    if polling_controller_sessions.sessions.get(current_user_uuid, None) is None:
         raise HTTPException(status_code=400, detail="User not connected controller")
-    if not polling_controller_sessions[current_user_uuid].active:
+    if not polling_controller_sessions.sessions[current_user_uuid].active:
         raise HTTPException(status_code=400, detail="User not connected controller")
     furniture_uuid = importFurnitureEvent.uuid
     event = PollingImportFurnitureEvent(furniture_uuid=furniture_uuid)
-    polling_controller_sessions[current_user_uuid].add_event(event)
+    polling_controller_sessions.sessions[current_user_uuid].add_event(event)
     error_logger.info(f"Furniture {furniture_uuid} added to queue")
     return {"detail": "Event added to queue"}
 
@@ -107,13 +108,13 @@ def create_polling_controller_session(
     error_logger.info(
         f"User {current_user_uuid} tries to create polling controller session"
     )
-    if polling_controller_sessions.get(current_user_uuid, None) == None:
-        polling_controller_sessions[current_user_uuid] = PollingControllerSession(
+    if polling_controller_sessions.sessions.get(current_user_uuid, None) == None:
+        polling_controller_sessions.sessions[
             current_user_uuid
-        )
+        ] = PollingControllerSession(current_user_uuid)
         error_logger.info(f"New polling session created for user {current_user_uuid}")
     else:
-        polling_controller_sessions[current_user_uuid].active = True
+        polling_controller_sessions.sessions[current_user_uuid].active = True
         error_logger.info(f"Polling session {current_user_uuid} reactivated")
     return {"detail": "Polling session created"}
 
@@ -123,10 +124,14 @@ def poll_controller_session(
     current_user: Annotated[UserInDB, Depends(get_current_user)],
 ):
     current_user_uuid = current_user.uuid
-    if polling_controller_sessions.get(current_user_uuid, None) == None:
+    if polling_controller_sessions.sessions.get(current_user_uuid, None) == None:
+        error_logger.warning("User not connected controller")
         raise HTTPException(status_code=400, detail="User not connected controller")
-    if not polling_controller_sessions[current_user_uuid].active:
+    if not polling_controller_sessions.sessions[current_user_uuid].active:
+        error_logger.warning("User session is not active")
         raise HTTPException(status_code=400, detail="User session is not active")
-    events_dicts = polling_controller_sessions[current_user_uuid].get_events_dict()
+    events_dicts = polling_controller_sessions.sessions[
+        current_user_uuid
+    ].get_events_dict()
     error_logger.info(f"Events polled: {events_dicts}")
     return {"events": events_dicts}
