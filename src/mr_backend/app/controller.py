@@ -23,19 +23,10 @@ from mr_backend.app.models import (
 
 error_logger = logging.getLogger("uvicorn.error")
 
-# sse_controller_sessions = {}
 
 polling_controller_sessions = SharedPollingControllerSessions()
 
 controller_router = APIRouter(prefix="/controller")
-
-
-# def clear_user_event_session(user_uuid: str):
-#     try:
-#         sse_controller_sessions.pop(user_uuid)  # Clear the queue
-#         logging.info(f"User {user_uuid} event session cleared")
-#     except KeyError:
-#         logging.info(f"User {user_uuid} event session not found")
 
 
 async def controller_event_generator(event_queue: asyncio.Queue):
@@ -54,31 +45,6 @@ async def controller_event_generator(event_queue: asyncio.Queue):
         except Exception:
             error_logger.info(f"Event generator stopped")
             break
-
-
-# @controller_router.get("/event")
-# async def send_controller_events(
-#     current_user: Annotated[UserInDB, Depends(get_current_user)]
-# ):
-#     current_user_uuid = current_user.uuid
-#     error_logger.info(f"Sessions: {sse_controller_sessions}")
-#     if sse_controller_sessions.get(current_user_uuid, None) is None:
-#         sse_controller_sessions[current_user_uuid] = SSEControllerSession(
-#             current_user_uuid
-#         )
-#         error_logger.info(f"New session created for user {current_user_uuid}")
-#     else:
-#         sse_controller_sessions[current_user_uuid].active = True
-#         error_logger.info(f"Session {current_user_uuid} reactivated")
-#     try:
-#         return StreamingResponse(
-#             # controller_event_generator(controller_sessions[current_user_uuid]),
-#             sse_controller_sessions[current_user_uuid].event_iterator(),
-#             media_type="text/event-stream",
-#             # background=clear_user_event_session(current_user_uuid),
-#         )
-#     except Exception:
-#         error_logger.info(f"User {current_user_uuid} disconnected")
 
 
 @controller_router.post("/event/import-furniture")

@@ -114,15 +114,15 @@ def inference_thread():
             finish_task(task.task_id, timedelta(seconds=time() - start_time))
             create_model_info_from_task(task.task_id)
             create_model_preview(task.task_id)
-            user_uuid = get_task_user_uuid(task.task_id)
-            if polling_controller_sessions.sessions.get(user_uuid, None) != None:
-                event = PollingImportFurnitureEvent(furniture_uuid=task.task_id)
-                polling_controller_sessions.sessions[user_uuid].add_event(event)
-                error_logger.info(
-                    f"MR Session: {user_uuid} is active. New generated furniture pushed to MR."
-                )
-            else:
-                error_logger.info(f"MR Session: {user_uuid} is not currently active.")
+            # user_uuid = get_task_user_uuid(task.task_id)
+            # if polling_controller_sessions.sessions.get(user_uuid, None) != None:
+            #     event = PollingImportFurnitureEvent(furniture_uuid=task.task_id)
+            #     polling_controller_sessions.sessions[user_uuid].add_event(event)
+            #     error_logger.info(
+            #         f"MR Session: {user_uuid} is active. New generated furniture pushed to MR."
+            #     )
+            # else:
+            #     error_logger.info(f"MR Session: {user_uuid} is not currently active.")
         except Exception as e:
             print(f"Error during inference for task {task.task_id}: {str(e)}")
             update_task_status(task.task_id, TaskStatusEnum.failed)
